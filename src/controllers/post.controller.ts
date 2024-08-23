@@ -40,12 +40,19 @@ export const create_post = async (
       uploaded_files_urls.push(uploaded_file.url);
     }
 
+    // * If the request content type header is in multipart/formdata instead of application/json format,
+    // * convert the string values of the visibility and topic parameters to objects
+    const post_visibility =
+      typeof visibility === "string" ? JSON.parse(visibility) : visibility;
+    const post_topics =
+      typeof topics === "string" ? JSON.parse(topics) : topics;
+
     // * Create a new post object in the post collection
     const created_post = await PostModel.create({
-      visibility,
+      visibility: post_visibility,
       content,
       username,
-      topics,
+      topics: post_topics,
       file_urls: uploaded_files_urls,
       date_created: new Date(),
       reactions: [],

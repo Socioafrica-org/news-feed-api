@@ -9,7 +9,7 @@ const connect_mongodb = async () => {
         }@${
           process.env.MONGODB_LOCAL_HOST || "localhost:27017"
         }/${DB_NAME}?authSource=admin`
-      : `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@mern-stack-tutorial.v1nmjcm.mongodb.net/${DB_NAME}?retryWrites=true&w=majority`;
+      : `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@socioafrica.x73b2.mongodb.net/${DB_NAME}?retryWrites=true&w=majority`;
 
   const con = await mongoose.connect(URL);
 
