@@ -8,6 +8,7 @@ import topic_router from "./routes/topic.route";
 import { TExtendedRequestTokenData } from "./utils/types";
 import post_router from "./routes/post.route";
 import comment_router from "./routes/comment.route";
+import reaction_routes from "./routes/reaction.route";
 
 // * Load the environmental variables from the .env file to the process.ENV object
 config();
@@ -38,17 +39,17 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // ! REMOVE: Add the token_data field to the req object (just for test purposes)
-app.use(((
-  req: Request & TExtendedRequestTokenData,
-  res: Response,
-  next: NextFunction
-) => {
-  req.token_data = {
-    username: (req.headers.username as string) || "",
-    user_id: (req.headers.user_id as string) || "",
-  };
-  next();
-}) as any);
+// app.use(((
+//   req: Request & TExtendedRequestTokenData,
+//   res: Response,
+//   next: NextFunction
+// ) => {
+//   req.token_data = {
+//     username: (req.headers.username as string) || "",
+//     user_id: (req.headers.user_id as string) || "",
+//   };
+//   next();
+// }) as any);
 
 // * Handles all requests to the /topics endpoint
 app.use("/topics", topic_router);
@@ -56,6 +57,8 @@ app.use("/topics", topic_router);
 app.use("/posts", post_router);
 // * Handles all requests to the /comment endpoint
 app.use("/comments", comment_router);
+// * Handles all requests to the /reaction endpoint
+app.use("/reactions", reaction_routes);
 
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
   const time = new Date(Date.now()).toString();

@@ -8,8 +8,16 @@ const comment: Schema<TCommentModel> = new Schema({
   reply_to: { type: String },
   post_id: { type: Schema.Types.ObjectId, required: true },
   reactions: {
-    type: [String],
-    enum: { values: ["like", "dislike"] },
+    required: true,
+    type: [
+      {
+        username: String,
+        reaction: {
+          type: String,
+          enum: { values: ["like", "dislike"] },
+        },
+      },
+    ],
   },
 });
 

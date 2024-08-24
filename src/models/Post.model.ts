@@ -21,8 +21,15 @@ const post: Schema<TPostModel> = new Schema({
   date_created: { required: true, type: Date },
   reactions: {
     required: true,
-    type: [String],
-    enum: { values: ["like", "dislike"] },
+    type: [
+      {
+        username: String,
+        reaction: {
+          type: String,
+          enum: { values: ["like", "dislike"] },
+        },
+      },
+    ],
   },
 });
 

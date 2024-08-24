@@ -17,6 +17,7 @@
   "author": "Prince",
   "license": "ISC",
   "dependencies": {
+    "@types/axios": "^0.14.0",
     "@types/bcrypt": "^5.0.2",
     "@types/body-parser": "^1.19.5",
     "@types/cookie-parser": "^1.4.7",
@@ -27,6 +28,7 @@
     "@types/multer": "^1.4.11",
     "@types/nodemailer": "^6.4.15",
     "@types/uuidv4": "^5.0.0",
+    "axios": "^1.7.5",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
     "cloudinary": "^2.4.0",

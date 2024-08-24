@@ -58,3 +58,9 @@ export type TExtendedRequestTokenData = {
 };
 
 export type TFetchPostRequestBody = { pagination: number; topics: string[] };
+
+export type TReactionRequestBody = {
+  post_id: string;
+  comment_id: string;
+  reaction: "like" | "dislike";
+};
