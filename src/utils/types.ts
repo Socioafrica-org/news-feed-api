@@ -5,13 +5,27 @@ export type TTopicModel = {
   name: string;
 };
 
+type TReactions = "like" | "dislike";
+type TVisibilityModes = "all" | "community" | "private";
+
+type TReactionsCount = {
+  like: {
+    count: number;
+    liked: boolean;
+  };
+  dislike: {
+    count: number;
+    disliked: boolean;
+  };
+};
+
 export type TPostModel = {
-  visibility: { mode: "all" | "community"; community_id: string };
+  visibility: { mode: TVisibilityModes; community_id: string };
   username: string;
   content: string;
   file_urls: string[];
-  topics: string[];
-  shares: number;
+  topic: string;
+  shares: string[];
   date_created: Date | string | number;
   reactions: TPostReaction[];
 };
@@ -25,29 +39,26 @@ export type TCommentModel = {
   reactions: TCommentReaction[];
 };
 
-export type TCommentResponse = TCommentModel & {
-  replies: TCommentModel[];
-};
-
-export type TPostResponse = TPostModel & {
-  comments: TCommentModel[];
+export type TCommentResponse = Omit<TCommentModel, "reactions"> & {
+  replies?: TCommentResponse[];
+  reactions: TReactionsCount;
 };
 
 export type TPostReaction = {
   username: string;
-  reaction: "like" | "dislike";
+  reaction: TReactions;
   post_id: Schema.Types.ObjectId;
 };
 
 export type TCommentReaction = {
   username: string;
-  reaction: "like" | "dislike";
+  reaction: TReactions;
 };
 
 export type TCreatePostRequestBody = {
-  visibility: { type: "all" | "community"; community_id: string };
+  visibility: { type: TVisibilityModes; community_id: string };
   content: string;
-  topics: string[];
+  topic: string;
   images: File[];
 };
 
@@ -62,5 +73,13 @@ export type TFetchPostRequestBody = { pagination: number; topics: string[] };
 export type TReactionRequestBody = {
   post_id: string;
   comment_id: string;
-  reaction: "like" | "dislike";
+  reaction: TReactions;
+};
+
+export type TPostResponse = Omit<TPostModel, "reactions" | "shares"> & {
+  reactions: TReactionsCount;
+  comments_count?: number;
+  comments?: TCommentModel[];
+  bookmarked: boolean;
+  shares: { count: number; shared: boolean };
 };

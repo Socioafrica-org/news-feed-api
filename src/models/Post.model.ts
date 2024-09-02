@@ -11,13 +11,13 @@ const post: Schema<TPostModel> = new Schema({
       mode: {
         type: String,
         enum: {
-          values: ["all", "community"],
+          values: ["all", "community", "private"],
         },
       },
       community_id: String,
     },
   },
-  topics: { required: true, type: [String] },
+  topic: { type: String },
   date_created: { required: true, type: Date },
   reactions: {
     required: true,
