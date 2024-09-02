@@ -1,12 +1,16 @@
 import { Request, Response } from "express";
 import {
+  TPostResponse,
   TCommentResponse,
   TCreatePostRequestBody,
   TExtendedRequestTokenData,
   TFetchPostRequestBody,
-  TPostResponse,
 } from "../utils/types";
-import { upload_file_to_cloudinary } from "../utils/utils";
+import {
+  parse_posts,
+  parse_single_post,
+  upload_file_to_cloudinary,
+} from "../utils/utils";
 import PostModel from "../models/Post.model";
 import CommentModel from "../models/Comment.model";
 
@@ -21,7 +25,7 @@ export const create_post = async (
 ) => {
   try {
     const { username } = req.token_data;
-    const { visibility, content, topics } = req.body;
+    const { visibility, content } = req.body;
     const files = (req.files as Express.Multer.File[]) || [];
     const uploaded_files_urls: string[] = [];
 
@@ -41,18 +45,16 @@ export const create_post = async (
     }
 
     // * If the request content type header is in multipart/formdata instead of application/json format,
-    // * convert the string values of the visibility and topic parameters to objects
+    // * convert the string values of the visibility parameter to objects
     const post_visibility =
       typeof visibility === "string" ? JSON.parse(visibility) : visibility;
-    const post_topics =
-      typeof topics === "string" ? JSON.parse(topics) : topics;
 
     // * Create a new post object in the post collection
     const created_post = await PostModel.create({
       visibility: post_visibility,
       content,
       username,
-      topics: post_topics,
+      topic: req.body.topic || undefined,
       file_urls: uploaded_files_urls,
       date_created: new Date(),
       reactions: [],
@@ -78,10 +80,11 @@ export const create_post = async (
  * @param res The Express Js response object
  */
 export const get_post = async (
-  req: Request<{ post_id: string }, any>,
+  req: Request<{ post_id: string }, any> & TExtendedRequestTokenData,
   res: Response
 ) => {
   try {
+    const { username } = req.token_data;
     const { post_id } = req.params;
     // * Retrieve post from the posts collection via it's ID
     const post_response = await PostModel.findOne({ _id: post_id }).catch((e) =>
@@ -97,34 +100,12 @@ export const get_post = async (
       return res.status(404).json("Post not found");
     }
 
-    // * Retrieve all comments belonging to a post
-    const comment_response = await CommentModel.find({
-      post_id: post_response._id,
-    }).catch((e) => console.error("Could not retreive comments", e));
-    // * If the post comments could not be retrieved
-    if (!comment_response) {
-      console.error("Could not retreive post comments");
-      return res.status(500).json("Could not retreive post comments");
-    }
-
-    // * Loops through the comment response to filter parent comments from child comments/replies, and adds replies to each parent comment
-    const comments = comment_response
-      // * Filters out replies, i.e. returns only parent comments
-      .filter((comment) => comment.parent_comment_id === undefined)
-      // * loops though each parent comment and adds children comments (all comments in the post with it's id as their parent id) as its replies
-      .map<TCommentResponse>((comment) => {
-        return {
-          ...(comment as any)._doc,
-          // * Filters all comments in the post which has their parent id as the id of the current comment
-          replies: comment_response.filter(
-            (reply) =>
-              reply.parent_comment_id?.toString() === comment._id.toString()
-          ),
-        };
-      });
-
-    // * Add the returned post and its comments to the response object
-    const post: TPostResponse = { ...(post_response as any)._doc, comments };
+    // * Parse the post, add parameters for the response body, e.g. the reactions, comments, bookmarked state, no. of times shared, etc...
+    const post: TPostResponse = await parse_single_post(
+      post_response,
+      username,
+      { comments: true }
+    );
 
     return res.status(200).json(post);
   } catch (error) {
@@ -141,18 +122,19 @@ export const get_post = async (
 export const get_posts = async (
   req: Request<any, any, TFetchPostRequestBody> & {
     topics?: string[] | undefined;
-  },
+  } & TExtendedRequestTokenData,
   res: Response
 ) => {
+  const { username } = req.token_data;
   const { pagination } = req.body;
   const limit = 10;
   const amount_to_skip = (pagination - 1) * limit;
   try {
     // * If it was specified to retrieve posts by the topics relating to the user
-    if (req.topics) {
+    if (Array.isArray(req.topics)) {
       // * Get posts from the collection which are visible to all users, and belong to at least one of the topics specified, in batches of 10 according to the current pagination
       const posts_belonging_to_topics = await PostModel.find({
-        topics: { $in: req.topics },
+        $or: req.topics.map((topic) => ({ topic: topic })),
         "visibility.mode": "all",
       })
         .sort({ date_created: -1 })
@@ -172,7 +154,7 @@ export const get_posts = async (
       if (posts_belonging_to_topics.length < 1) {
         // * Get posts from the collection which are visible to all users, and DOESN'T belong to ANY topic, in batches of 10 according to the current pagination
         const posts_not_belonging_to_topics = await PostModel.find({
-          topics: { $size: 0 },
+          topic: undefined,
           "visibility.mode": "all",
         })
           .sort({ date_created: -1 })
@@ -192,12 +174,26 @@ export const get_posts = async (
         if (posts_not_belonging_to_topics.length < 1)
           return res.status(404).json("No posts available");
 
+        // * Parse each post in the list, return their reaction count, comment count, bookmarked state, total no. of times shared, etc...
+        const posts_not_belonging_to_topics_to_be_returned = await parse_posts(
+          posts_not_belonging_to_topics,
+          username
+        );
+
         // * Return the posts with no topic
-        return res.status(200).json(posts_not_belonging_to_topics);
+        return res
+          .status(200)
+          .json(posts_not_belonging_to_topics_to_be_returned);
       }
 
+      // * Parse each post in the list, return their reaction count, comment count, bookmarked state, total no. of times shared, etc...
+      const posts_belonging_to_topics_to_be_returned = await parse_posts(
+        posts_belonging_to_topics,
+        username
+      );
+
       // * Return the posts with the specified topics
-      return res.status(200).json(posts_belonging_to_topics);
+      return res.status(200).json(posts_belonging_to_topics_to_be_returned);
     }
 
     // * If it wasn't specifed to retreive posts according to any topic
@@ -221,7 +217,10 @@ export const get_posts = async (
     // * If there isn't any post in the collection
     if (all_posts.length < 1) return res.status(404).json("No posts available");
 
-    return res.status(200).json(all_posts);
+    // * Parse each post in the list, return their reaction count, comment count, bookmarked state, total no. of times shared, etc...
+    const posts_to_be_returned = await parse_posts(all_posts, username);
+    // * Return all the posts in the collection irrespective of their topics
+    return res.status(200).json(posts_to_be_returned);
   } catch (error) {
     console.error(error);
     return res.status(500).json("Internal server error");

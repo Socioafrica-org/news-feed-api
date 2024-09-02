@@ -6,6 +6,7 @@ import {
 } from "../utils/types";
 import CommentModel from "../models/Comment.model";
 import PostModel from "../models/Post.model";
+import { parse_comment } from "../utils/utils";
 
 /**
  * * Function responsible for creating a new comment in a post, i.e. adding a new comment to a post
@@ -89,10 +90,12 @@ export const edit_comment = async (
  * @returns void
  */
 export const get_comment = async (
-  req: Request<{ comment_id: string }, any, TCommentModel>,
+  req: Request<{ comment_id: string }, any, TCommentModel> &
+    TExtendedRequestTokenData,
   res: Response
 ) => {
   try {
+    const { username } = req.token_data;
     const { comment_id } = req.params;
 
     // * Retreive comment from the comment collection
@@ -118,14 +121,24 @@ export const get_comment = async (
       return res.status(500).json("Could not retreive replies to comment");
     }
 
-    // * Add retreived comments to the replies of the current comment
-    const comment = (comment_response as any)._doc as TCommentResponse;
-    const replies = replies_response.map((reply) => {
-      return (reply as any)._doc as TCommentModel;
-    });
-    comment.replies = replies;
+    // * Parse the comment data retrieved from the collection, adding properties such as like/dislike count
+    const parsed_comment = await parse_comment(comment_response, username);
 
-    return res.status(200).json(comment);
+    // * A list containing the parsed replies of the comment
+    const parsed_replies: TCommentResponse[] = [];
+
+    // * Loop trhough the replies list and parse each reply, adding properties such as like/dislike count
+    for (const reply of replies_response) {
+      const parsed_reply = await parse_comment(reply, username);
+
+      // * Append the parsed reply to the list of parsed replies
+      parsed_replies.push(parsed_reply);
+    }
+
+    // * Add the list of the parsed replies to the parsed comment response body
+    parsed_comment.replies = parsed_replies;
+
+    return res.status(200).json(parsed_comment);
   } catch (error) {
     console.error(error);
     return res.status(500).json("Internal server error");
