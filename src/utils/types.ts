@@ -42,6 +42,7 @@ export type TCommentModel = {
 export type TCommentResponse = Omit<TCommentModel, "reactions"> & {
   replies?: TCommentResponse[];
   reactions: TReactionsCount;
+  bookmarked: boolean;
 };
 
 export type TPostReaction = {
@@ -82,4 +83,10 @@ export type TPostResponse = Omit<TPostModel, "reactions" | "shares"> & {
   comments?: TCommentModel[];
   bookmarked: boolean;
   shares: { count: number; shared: boolean };
+};
+
+export type TBookmarkModel = {
+  username: string;
+  post_id: string;
+  comment_id: string;
 };

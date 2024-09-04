@@ -9,6 +9,7 @@ import {
   TCommentModel,
 } from "./types";
 import CommentModel from "../models/Comment.model";
+import bookmark_model from "../models/Bookmark.model";
 
 /**
  * * Uploads a file to cloudinary object storage
@@ -107,6 +108,19 @@ export const parse_single_post = async (
         })
     : undefined;
 
+  // * Check if an existing bookmark of this post/comment and username exists in the collection
+  const existing_bookmark = await bookmark_model
+    .findOne({
+      username,
+      post_id: post._id,
+    })
+    .catch((e) => console.error("Error retrieving the bookmark", e));
+
+  // * If an error occured while retrieving the existing bookmark
+  if (existing_bookmark === undefined) {
+    console.error("Error retrieving the bookmark");
+  }
+
   // * The new post response format
   const parsed_post: TPostResponse = {
     ...(post as any)._doc,
@@ -138,7 +152,7 @@ export const parse_single_post = async (
           : false,
       },
     },
-    bookmarked: false,
+    bookmarked: existing_bookmark ? true : false,
     shares: { count: 0, shared: false },
     comments_count: all_comments.length,
     // * IF THE CONFIG.COMMENT ARG IS ENABLED: Add the comments parameter with the parsed comments
@@ -161,6 +175,19 @@ export const parse_comment = async (
     },
   username: string
 ): Promise<TCommentResponse> => {
+  // * Check if an existing bookmark of this post/comment and username exists in the collection
+  const existing_bookmark = await bookmark_model
+    .findOne({
+      username,
+      comment_id: comment._id,
+    })
+    .catch((e) => console.error("Error retrieving the bookmark", e));
+
+  // * If an error occured while retrieving the existing bookmark
+  if (existing_bookmark === undefined) {
+    console.error("Error retrieving the bookmark");
+  }
+
   const parsed_comment: TCommentResponse = {
     ...(comment as any)._doc,
     reactions: {
@@ -193,6 +220,7 @@ export const parse_comment = async (
           : false,
       },
     },
+    bookmarked: existing_bookmark ? true : false,
   };
 
   return parsed_comment;

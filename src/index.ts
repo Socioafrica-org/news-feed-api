@@ -8,7 +8,8 @@ import topic_router from "./routes/topic.route";
 import { TExtendedRequestTokenData } from "./utils/types";
 import post_router from "./routes/post.route";
 import comment_router from "./routes/comment.route";
-import reaction_routes from "./routes/reaction.route";
+import reaction_router from "./routes/reaction.route";
+import bookmark_router from "./routes/bookmark.route";
 
 // * Load the environmental variables from the .env file to the process.ENV object
 config();
@@ -58,7 +59,9 @@ app.use("/posts", post_router);
 // * Handles all requests to the /comment endpoint
 app.use("/comments", comment_router);
 // * Handles all requests to the /reaction endpoint
-app.use("/reactions", reaction_routes);
+app.use("/reactions", reaction_router);
+// * Handles all requests to the /reaction endpoint
+app.use("/bookmarks", bookmark_router);
 
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
   const time = new Date(Date.now()).toString();
