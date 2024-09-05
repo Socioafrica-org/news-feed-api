@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { TBookmarkModel, TExtendedRequestTokenData } from "../utils/types";
 import BookmarkModel from "../models/Bookmark.model";
+import PostModel from "../models/Post.model";
+import CommentModel from "../models/Comment.model";
 
 export const edit_bookmark = async (
   req: Request<any, any, TBookmarkModel> & TExtendedRequestTokenData,
@@ -8,6 +10,43 @@ export const edit_bookmark = async (
 ) => {
   try {
     const { username } = req.token_data;
+
+    // * If the item to be bookmarked is a post, check if it exists
+    if (req.body.post_id) {
+      // * Check if the post to be bookmarked exists in the database
+      const existing_post = await PostModel.findOne({
+        _id: req.body.post_id,
+      }).catch((e) =>
+        console.error("Error retrieving post to be bookmarked", e)
+      );
+
+      // * If post to be bookmarked could'nt be found or an error occured while retrieving the post, return a 404 error
+      if (!existing_post) {
+        console.error(
+          "Could not retrieve post to be bookmarked or post doesn't exist"
+        );
+        return res.status(404).json("Post doesn't exist");
+      }
+    }
+
+    // * If the item to be bookmarked is a comment, check if it exists
+    else if (req.body.comment_id) {
+      // * Check if the comment to be bookmarked exists in the database
+      const existing_comment = await CommentModel.findOne({
+        _id: req.body.comment_id,
+      }).catch((e) =>
+        console.error("Error retrieving comment to be bookmarked", e)
+      );
+
+      // * If comment to be bookmarked could'nt be found or an error occured while retrieving the comment, return a 404 error
+      if (!existing_comment) {
+        console.error(
+          "Could not retrieve comment to be bookmarked or comment doesn't exist"
+        );
+        return res.status(404).json("Comment doesn't exist");
+      }
+    }
+
     // * Check if an existing bookmark of this post/comment and username exists in the collection
     const existing_bookmark = await BookmarkModel.findOne({
       username,

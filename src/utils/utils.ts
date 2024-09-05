@@ -10,6 +10,7 @@ import {
 } from "./types";
 import CommentModel from "../models/Comment.model";
 import bookmark_model from "../models/Bookmark.model";
+import PostModel from "../models/Post.model";
 
 /**
  * * Uploads a file to cloudinary object storage
@@ -63,6 +64,10 @@ export const parse_posts = async (
   for (const post of posts) {
     // * Parse the post data
     const parsed_post = await parse_single_post(post, username);
+
+    // * If the above function returned undefined. e.g. in the case of a shared post whose parent post could not be found, skip this post
+    if (!parsed_post) continue;
+
     // * Add the parsed post to the list of posts to be returned
     posts_to_be_returned.push(parsed_post);
   }
@@ -72,7 +77,7 @@ export const parse_posts = async (
 
 /**
  * * Function responsible for parsing a post from the collection for the post endpoint response body
- * @param post The post from the post collection to be parsed for the response body
+ * @param post_details_to_be_parsed The post from the post collection to be parsed for the response body
  * @param username The username of the user wo made this request
  * @param config The configuration. I.e. determines if the post comments should be returned
  * @returns The parsed post
@@ -83,12 +88,32 @@ export const parse_single_post = async (
       _id: Types.ObjectId;
     },
   username: string,
-  config?: { comments: boolean }
-): Promise<TPostResponse> => {
+  config?: {
+    comments: boolean;
+  }
+): Promise<TPostResponse | undefined | void> => {
+  let post_details_to_be_parsed = post;
+
+  // * Check if this post is a shared post, i.e. is not the original post
+  if (post.parent_post_id && post.shared_by) {
+    // * If it is a shared post, retrieve the original post details from the collection
+    const original_post = await PostModel.findOne({
+      _id: post.parent_post_id,
+    }).catch((e) =>
+      console.error("An error occured while retrieving the parent post", e)
+    );
+    // * If the original post was not found, return undefined
+    if (!original_post)
+      return console.error("The original post could not be found");
+
+    // * Set the post details to be returned to the details of the original post
+    post_details_to_be_parsed = original_post;
+  }
+
   // * Get the comments for this post
-  const all_comments = await CommentModel.find({ post_id: post._id }).catch(
-    (e) => []
-  );
+  const all_comments = await CommentModel.find({
+    post_id: post_details_to_be_parsed._id,
+  }).catch((e) => []);
 
   // * IF THE CONFIG.COMMENTS ARG IS TRUE: Loops through the comment response to filter parent comments from child comments/replies, and adds replies to each parent comment
   const comments = config?.comments
@@ -112,7 +137,7 @@ export const parse_single_post = async (
   const existing_bookmark = await bookmark_model
     .findOne({
       username,
-      post_id: post._id,
+      post_id: post_details_to_be_parsed._id,
     })
     .catch((e) => console.error("Error retrieving the bookmark", e));
 
@@ -121,17 +146,22 @@ export const parse_single_post = async (
     console.error("Error retrieving the bookmark");
   }
 
+  // * Retrieve the posts in the collection which are based off this post
+  const shares = await PostModel.find({
+    parent_post_id: post_details_to_be_parsed._id,
+  }).catch((e) => []);
+
   // * The new post response format
   const parsed_post: TPostResponse = {
-    ...(post as any)._doc,
+    ...(post_details_to_be_parsed as any)._doc,
     reactions: {
       like: {
         // * Get the number of likes from the list of the reaction
-        count: post.reactions.filter(
+        count: post_details_to_be_parsed.reactions.filter(
           (each_post) => each_post.reaction === "like"
         ).length,
         // * Confirms if the user has perfomed this reaction on this post, i.e. has liked this post
-        liked: post.reactions.find(
+        liked: post_details_to_be_parsed.reactions.find(
           (each_post) =>
             each_post.reaction === "like" && each_post.username === username
         )
@@ -140,11 +170,11 @@ export const parse_single_post = async (
       },
       dislike: {
         // * Get the number of dislikes from the list of the reaction
-        count: post.reactions.filter(
+        count: post_details_to_be_parsed.reactions.filter(
           (each_post) => each_post.reaction === "dislike"
         ).length,
         // * Confirms if the user has perfomed this reaction on this post, i.e. has disliked this post
-        disliked: post.reactions.find(
+        disliked: post_details_to_be_parsed.reactions.find(
           (each_post) =>
             each_post.reaction === "dislike" && each_post.username === username
         )
@@ -153,7 +183,13 @@ export const parse_single_post = async (
       },
     },
     bookmarked: existing_bookmark ? true : false,
-    shares: { count: 0, shared: false },
+    shares: {
+      count: shares.length,
+      // * Confirm if this user has previously shared this post
+      shared: shares.find((share) => share.username === username)
+        ? true
+        : false,
+    },
     comments_count: all_comments.length,
     // * IF THE CONFIG.COMMENT ARG IS ENABLED: Add the comments parameter with the parsed comments
     ...(config?.comments ? { comments } : {}),

@@ -28,6 +28,8 @@ export type TPostModel = {
   shares: string[];
   date_created: Date | string | number;
   reactions: TPostReaction[];
+  parent_post_id?: Schema.Types.ObjectId;
+  shared_by?: string;
 };
 
 export type TCommentModel = {

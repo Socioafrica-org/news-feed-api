@@ -101,11 +101,14 @@ export const get_post = async (
     }
 
     // * Parse the post, add parameters for the response body, e.g. the reactions, comments, bookmarked state, no. of times shared, etc...
-    const post: TPostResponse = await parse_single_post(
+    const post: TPostResponse | void = await parse_single_post(
       post_response,
       username,
       { comments: true }
     );
+
+    // * If the above function returned undefined. e.g. in the case of a shared post whose parent post could not be found, return a message that the post wasn't found
+    if (!post) return res.status(404).json("Post not found");
 
     return res.status(200).json(post);
   } catch (error) {

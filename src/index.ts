@@ -10,6 +10,7 @@ import post_router from "./routes/post.route";
 import comment_router from "./routes/comment.route";
 import reaction_router from "./routes/reaction.route";
 import bookmark_router from "./routes/bookmark.route";
+import share_router from "./routes/share.route";
 
 // * Load the environmental variables from the .env file to the process.ENV object
 config();
@@ -60,8 +61,10 @@ app.use("/posts", post_router);
 app.use("/comments", comment_router);
 // * Handles all requests to the /reaction endpoint
 app.use("/reactions", reaction_router);
-// * Handles all requests to the /reaction endpoint
+// * Handles all requests to the /bookmark endpoint
 app.use("/bookmarks", bookmark_router);
+// * Handles all requests to the /share endpoint
+app.use("/share", share_router);
 
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
   const time = new Date(Date.now()).toString();

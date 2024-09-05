@@ -18,6 +18,8 @@ const post: Schema<TPostModel> = new Schema({
     },
   },
   topic: { type: String },
+  parent_post_id: { type: Schema.Types.ObjectId },
+  shared_by: { type: String },
   date_created: { required: true, type: Date },
   reactions: {
     required: true,
