@@ -1,6 +1,6 @@
 import { UploadApiOptions, v2 as cloudinary } from "cloudinary";
 import DataURIParser from "datauri/parser";
-import { Document, Types } from "mongoose";
+import { Document, Schema, Types } from "mongoose";
 import path from "path";
 import {
   TPostResponse,
@@ -11,6 +11,7 @@ import {
 import CommentModel from "../models/Comment.model";
 import bookmark_model from "../models/Bookmark.model";
 import PostModel from "../models/Post.model";
+import UserModel from "../models/User.model";
 
 /**
  * * Uploads a file to cloudinary object storage
@@ -115,19 +116,33 @@ export const parse_single_post = async (
     post_id: post_details_to_be_parsed._id,
   }).catch((e) => []);
 
+  // * Parse each comment to include the comment metadata, e.g if it was bookmarked, it's reactions, the details of the user who shared it
+  const parsed_comments: (TCommentResponse & {
+    _id?: Schema.Types.ObjectId;
+  })[] = [];
+
+  // * Loop through the retrieved comments for each post and parse each comment
+  for (const comment of all_comments) {
+    // * The parsed comment containing all the necessary metadata
+    const parsed_comment = await parse_comment(comment, username);
+
+    parsed_comments.push(parsed_comment);
+  }
+
   // * IF THE CONFIG.COMMENTS ARG IS TRUE: Loops through the comment response to filter parent comments from child comments/replies, and adds replies to each parent comment
   const comments = config?.comments
-    ? all_comments
+    ? parsed_comments
         // * Filters out replies, i.e. returns only parent comments
         .filter((comment) => comment.parent_comment_id === undefined)
         // * loops though each parent comment and adds children comments (all comments in the post with it's id as their parent id) as its replies
-        .map<TCommentResponse>((comment) => {
+        .map<TCommentResponse>((parsed_comment) => {
           return {
-            ...(comment as any)._doc,
+            ...parsed_comment,
             // * Filters all comments in the post which has their parent id as the id of the current comment
-            replies: all_comments.filter(
+            replies: parsed_comments.filter(
               (reply) =>
-                reply.parent_comment_id?.toString() === comment._id.toString()
+                reply.parent_comment_id?.toString() ===
+                parsed_comment?._id?.toString()
             ),
           };
         })
@@ -151,9 +166,15 @@ export const parse_single_post = async (
     parent_post_id: post_details_to_be_parsed._id,
   }).catch((e) => []);
 
+  // * retrieve the details of the user who created this post
+  const user = await UserModel.findOne({ username }).catch((e) => {});
+
   // * The new post response format
   const parsed_post: TPostResponse = {
     ...(post_details_to_be_parsed as any)._doc,
+    parent_post_id: post.parent_post_id,
+    shared_by: post.shared_by,
+    user_details: user?.metadata || {},
     reactions: {
       like: {
         // * Get the number of likes from the list of the reaction
@@ -224,8 +245,12 @@ export const parse_comment = async (
     console.error("Error retrieving the bookmark");
   }
 
+  // * retrieve the details of the user who created this post
+  const user = await UserModel.findOne({ username }).catch((e) => {});
+
   const parsed_comment: TCommentResponse = {
     ...(comment as any)._doc,
+    user_details: user?.metadata || {},
     reactions: {
       like: {
         // * Get the number of likes from the list of the reaction
