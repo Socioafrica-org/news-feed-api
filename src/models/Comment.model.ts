@@ -7,6 +7,7 @@ const comment: Schema<TCommentModel> = new Schema({
   parent_comment_id: { type: Schema.Types.ObjectId },
   reply_to: { type: String },
   post_id: { type: Schema.Types.ObjectId, required: true },
+  date_created: { required: true, type: Date },
   reactions: {
     required: true,
     type: [

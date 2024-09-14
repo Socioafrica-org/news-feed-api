@@ -35,6 +35,7 @@ export const create_comment = async (
     const created_comment = await CommentModel.create({
       ...req.body,
       username,
+      date_created: new Date(),
       reactions: [],
     }).catch((e) => console.error("Could not create comment", e));
     //  * If the comment couldn't be created

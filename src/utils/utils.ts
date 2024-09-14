@@ -77,6 +77,21 @@ export const parse_posts = async (
 };
 
 /**
+ * * Function to retrieve the details of a user
+ * @param username The username of the user whose details are to be retrieved
+ * @returns The details of the user, i.e. the user's firstname, lastname, image, gender, etc
+ */
+const get_user_details = async (username: string) => {
+  // * Retrieve the user with this username from the collection
+  const user = await UserModel.findOne({ username }).catch((e) => {});
+
+  // * If the user hasn't uploaded his/her image, i.e. the image field doesn't exist, add it
+  if (user && !user?.metadata?.image) user.metadata.image = null;
+
+  return user?.metadata;
+};
+
+/**
  * * Function responsible for parsing a post from the collection for the post endpoint response body
  * @param post_details_to_be_parsed The post from the post collection to be parsed for the response body
  * @param username The username of the user wo made this request
@@ -167,14 +182,14 @@ export const parse_single_post = async (
   }).catch((e) => []);
 
   // * retrieve the details of the user who created this post
-  const user = await UserModel.findOne({ username }).catch((e) => {});
+  const user = await get_user_details(username);
 
   // * The new post response format
   const parsed_post: TPostResponse = {
     ...(post_details_to_be_parsed as any)._doc,
     parent_post_id: post.parent_post_id,
     shared_by: post.shared_by,
-    user_details: user?.metadata || {},
+    user_details: user || {},
     reactions: {
       like: {
         // * Get the number of likes from the list of the reaction
@@ -246,11 +261,11 @@ export const parse_comment = async (
   }
 
   // * retrieve the details of the user who created this post
-  const user = await UserModel.findOne({ username }).catch((e) => {});
+  const user = await get_user_details(username);
 
   const parsed_comment: TCommentResponse = {
     ...(comment as any)._doc,
-    user_details: user?.metadata || {},
+    user_details: user || {},
     reactions: {
       like: {
         // * Get the number of likes from the list of the reaction

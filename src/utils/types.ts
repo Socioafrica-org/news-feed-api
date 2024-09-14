@@ -39,6 +39,7 @@ export type TCommentModel = {
   reply_to: string;
   post_id: Schema.Types.ObjectId;
   reactions: TCommentReaction[];
+  date_created: Date | string | number;
 };
 
 export type TCommentResponse = Omit<TCommentModel, "reactions"> & {
@@ -108,5 +109,5 @@ type TUserModelMetaData = {
   last_name: string;
   phone_number: string;
   gender: string;
-  image: string;
+  image: string | null;
 };
