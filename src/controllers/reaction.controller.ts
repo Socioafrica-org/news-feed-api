@@ -7,6 +7,7 @@ import {
 } from "../utils/types";
 import PostModel from "../models/Post.model";
 import CommentModel from "../models/Comment.model";
+import { Model } from "mongoose";
 
 /**
  * * Function responsible for adding or removing a reaction to a post or comment
@@ -26,7 +27,7 @@ export const add_remove_reaction = async (
     if (req.body.post_id) {
       const { post_id, reaction } = req.body;
       // * retrieve post with specified id from the collection
-      const post = await PostModel.findOne({ _id: post_id }).catch((e) =>
+      const post = await PostModel.findById(post_id).catch((e) =>
         console.error("Could not retrieve post from collection", e)
       );
 
@@ -49,10 +50,9 @@ export const add_remove_reaction = async (
           (rxn) => rxn.username !== username && rxn.reaction !== reaction
         );
 
-        const unreact_to_post = await PostModel.updateOne(
-          { _id: post_id },
-          { $set: { reactions: new_reactions } }
-        ).catch((e) => console.error("Could not unreact to this post", e));
+        const unreact_to_post = await PostModel.findByIdAndUpdate(post_id, {
+          $set: { reactions: new_reactions },
+        }).catch((e) => console.error("Could not unreact to this post", e));
 
         // * If there was an error unreacting to the post
         if (!unreact_to_post) {
@@ -64,10 +64,9 @@ export const add_remove_reaction = async (
       }
 
       // * else, add a new reaction to the list of the post reactions
-      const react_to_post_res = await PostModel.updateOne(
-        { _id: post_id },
-        { $push: { reactions: { username, reaction } } }
-      ).catch((e) => console.error("Could not react to this post", e));
+      const react_to_post_res = await PostModel.findByIdAndUpdate(post_id, {
+        $push: { reactions: { username, reaction } },
+      }).catch((e) => console.error("Could not react to this post", e));
 
       // * If there was an error reacting to the post
       if (!react_to_post_res) {
@@ -75,14 +74,29 @@ export const add_remove_reaction = async (
         return res.status(500).json("Could not react to this post");
       }
 
+      // * If the added reaction is a like, remove the dislike reaction by this user and vise versa
+      await PostModel.findByIdAndUpdate(post_id, {
+        $pull: {
+          reactions: {
+            username,
+            reaction:
+              reaction === "like"
+                ? "dislike"
+                : reaction === "dislike"
+                ? "like"
+                : "",
+          },
+        },
+      });
+
       return res.status(200).json("Successfully reacted to the post");
     }
     // * If the item to react to is a comment
     if (req.body.comment_id) {
       const { comment_id, reaction } = req.body;
       // * retrieve comment with specified id from the collection
-      const comment = await CommentModel.findOne({ _id: comment_id }).catch(
-        (e) => console.error("Could not retrieve comment from collection", e)
+      const comment = await CommentModel.findById(comment_id).catch((e) =>
+        console.error("Could not retrieve comment from collection", e)
       );
 
       // * If there was an error retrieving the comment
@@ -104,8 +118,8 @@ export const add_remove_reaction = async (
           (rxn) => rxn.username !== username && rxn.reaction !== reaction
         );
 
-        const unreact_to_comment = await CommentModel.updateOne(
-          { _id: comment_id },
+        const unreact_to_comment = await CommentModel.findByIdAndUpdate(
+          comment_id,
           { $set: { reactions: new_reactions } }
         ).catch((e) => console.error("Could not unreact to this comment", e));
 
@@ -119,8 +133,8 @@ export const add_remove_reaction = async (
       }
 
       // * else, add a new reaction to the list of the comment reactions
-      const react_to_comment_res = await CommentModel.updateOne(
-        { _id: comment_id },
+      const react_to_comment_res = await CommentModel.findByIdAndUpdate(
+        comment_id,
         { $push: { reactions: { username, reaction } } }
       ).catch((e) => console.error("Could not react to this comment", e));
 
@@ -130,10 +144,23 @@ export const add_remove_reaction = async (
         return res.status(500).json("Could not react to this comment");
       }
 
+      // * If the added reaction is a like, remove the dislike reaction by this user and vise versa
+      await CommentModel.findByIdAndUpdate(comment_id, {
+        $pull: {
+          reactions: {
+            username,
+            reaction:
+              reaction === "like"
+                ? "dislike"
+                : reaction === "dislike"
+                ? "like"
+                : "",
+          },
+        },
+      });
+
       return res.status(200).json("Successfully reacted to the comment");
     }
-
-    return res.status(201).json("Comment created successfully");
   } catch (error) {
     console.error(error);
     return res.status(500).json("Internal server error");
