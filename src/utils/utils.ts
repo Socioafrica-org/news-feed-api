@@ -182,7 +182,7 @@ export const parse_single_post = async (
   }).catch((e) => []);
 
   // * retrieve the details of the user who created this post
-  const user = await get_user_details(username);
+  const user = await get_user_details(post_details_to_be_parsed.username);
 
   // * The new post response format
   const parsed_post: TPostResponse = {
@@ -261,7 +261,7 @@ export const parse_comment = async (
   }
 
   // * retrieve the details of the user who created this post
-  const user = await get_user_details(username);
+  const user = await get_user_details(comment.username);
 
   const parsed_comment: TCommentResponse = {
     ...(comment as any)._doc,
