@@ -2,10 +2,7 @@ import { model, Schema } from "mongoose";
 import { TBookmarkModel } from "../utils/types";
 
 const bookmark_schema: Schema<TBookmarkModel> = new Schema<TBookmarkModel>({
-  username: {
-    type: String,
-    required: true,
-  },
+  user: { required: true, type: Schema.Types.ObjectId, ref: "User" },
   post_id: {
     type: String,
   },

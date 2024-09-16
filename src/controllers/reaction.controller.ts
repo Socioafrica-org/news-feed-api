@@ -20,7 +20,7 @@ export const add_remove_reaction = async (
   res: Response
 ) => {
   try {
-    const { username } = req.token_data;
+    const { user_id } = req.token_data;
 
     // * Check if the item to react to is a post or a comment
     // * If the item to react to is a post
@@ -37,9 +37,9 @@ export const add_remove_reaction = async (
         return res.status(404).json("Post doesn't exist");
       }
 
-      // * Check if a reaction of this type and username exists in this post
+      // * Check if a reaction of this type and user_id exists in this post
       const existing_reaction = post.reactions.find(
-        (rxn) => rxn.username === username && rxn.reaction === reaction
+        (rxn) => rxn.user.toString() === user_id && rxn.reaction === reaction
       );
 
       // * If it does, remove it from the list of the reactions on this post, and update the database
@@ -47,7 +47,7 @@ export const add_remove_reaction = async (
         const new_reactions = [
           ...((post as any)._doc.reactions as TPostReaction[]),
         ].filter(
-          (rxn) => rxn.username !== username && rxn.reaction !== reaction
+          (rxn) => rxn.user.toString() !== user_id && rxn.reaction !== reaction
         );
 
         const unreact_to_post = await PostModel.findByIdAndUpdate(post_id, {
@@ -65,7 +65,7 @@ export const add_remove_reaction = async (
 
       // * else, add a new reaction to the list of the post reactions
       const react_to_post_res = await PostModel.findByIdAndUpdate(post_id, {
-        $push: { reactions: { username, reaction } },
+        $push: { reactions: { user: user_id, reaction } },
       }).catch((e) => console.error("Could not react to this post", e));
 
       // * If there was an error reacting to the post
@@ -78,7 +78,7 @@ export const add_remove_reaction = async (
       await PostModel.findByIdAndUpdate(post_id, {
         $pull: {
           reactions: {
-            username,
+            user: user_id,
             reaction:
               reaction === "like"
                 ? "dislike"
@@ -105,9 +105,9 @@ export const add_remove_reaction = async (
         return res.status(404).json("Comment doesn't exist");
       }
 
-      // * Check if a reaction of this type and username exists in this comment
+      // * Check if a reaction of this type and user_id exists in this comment
       const existing_reaction = comment.reactions.find(
-        (rxn) => rxn.username === username && rxn.reaction === reaction
+        (rxn) => rxn.user.toString() === user_id && rxn.reaction === reaction
       );
 
       // * If it does, remove it from the list of the reactions on this comment, and update the database
@@ -115,7 +115,7 @@ export const add_remove_reaction = async (
         const new_reactions = [
           ...((comment as any)._doc.reactions as TCommentReaction[]),
         ].filter(
-          (rxn) => rxn.username !== username && rxn.reaction !== reaction
+          (rxn) => rxn.user.toString() !== user_id && rxn.reaction !== reaction
         );
 
         const unreact_to_comment = await CommentModel.findByIdAndUpdate(
@@ -135,7 +135,7 @@ export const add_remove_reaction = async (
       // * else, add a new reaction to the list of the comment reactions
       const react_to_comment_res = await CommentModel.findByIdAndUpdate(
         comment_id,
-        { $push: { reactions: { username, reaction } } }
+        { $push: { reactions: { user: user_id, reaction } } }
       ).catch((e) => console.error("Could not react to this comment", e));
 
       // * If there was an error reacting to the comment
@@ -148,7 +148,7 @@ export const add_remove_reaction = async (
       await CommentModel.findByIdAndUpdate(comment_id, {
         $pull: {
           reactions: {
-            username,
+            user: user_id,
             reaction:
               reaction === "like"
                 ? "dislike"

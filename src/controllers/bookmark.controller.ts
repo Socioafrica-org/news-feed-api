@@ -9,7 +9,7 @@ export const edit_bookmark = async (
   res: Response
 ) => {
   try {
-    const { username } = req.token_data;
+    const { user_id } = req.token_data;
 
     // * If the item to be bookmarked is a post, check if it exists
     if (req.body.post_id) {
@@ -47,9 +47,9 @@ export const edit_bookmark = async (
       }
     }
 
-    // * Check if an existing bookmark of this post/comment and username exists in the collection
+    // * Check if an existing bookmark of this post/comment and user_id exists in the collection
     const existing_bookmark = await BookmarkModel.findOne({
-      username,
+      user: user_id,
       ...(req.body.post_id
         ? { post_id: req.body.post_id }
         : req.body.comment_id
@@ -67,7 +67,7 @@ export const edit_bookmark = async (
     if (existing_bookmark) {
       // * Delete the bookmark from the collection
       const deleted_bookmark = await BookmarkModel.deleteOne({
-        username,
+        user: user_id,
         ...(req.body.post_id
           ? { post_id: req.body.post_id }
           : req.body.comment_id
@@ -88,7 +88,7 @@ export const edit_bookmark = async (
 
     // * Create a new bookmark in the database
     const created_bookmark = await BookmarkModel.create({
-      username,
+      user: user_id,
       post_id: req.body.post_id,
       comment_id: req.body.comment_id,
     }).catch((e) => console.error("Error creating the bookmark", e));
@@ -111,10 +111,10 @@ export const get_user_bookmarks = async (
   res: Response
 ) => {
   try {
-    const { username } = req.token_data;
+    const { user_id } = req.token_data;
 
     // * Retrieve the list of existing bookmarks in the Topics collection
-    const bookmarks = await BookmarkModel.find({ username }).catch((e) =>
+    const bookmarks = await BookmarkModel.find({ user: user_id }).catch((e) =>
       console.error("ERROR RETRIEVING THE BOOKMARKED ITEMS", e)
     );
 
