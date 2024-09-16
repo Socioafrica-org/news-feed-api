@@ -82,11 +82,13 @@ export const parse_posts = async (
  * @param user The user data as returned from the collection
  */
 const transform_user_details = (user: TUserModel) => {
-  // * If the user hasn't uploaded his/her image, i.e. the image field doesn't exist, add it
-  if (user && !user.metadata.image) user.metadata.image = null;
+  const parsed_user = (user as any).metadata._doc;
 
-  user.metadata.username = user.username;
-  return user.metadata;
+  // * If the user hasn't uploaded his/her image, i.e. the image field doesn't exist, add it
+  if (!parsed_user.image) parsed_user.image = null;
+
+  parsed_user.username = user.username;
+  return parsed_user;
 };
 
 /**
