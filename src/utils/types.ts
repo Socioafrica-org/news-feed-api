@@ -46,7 +46,6 @@ export type TCommentResponse = Omit<TCommentModel, "reactions"> & {
   replies?: TCommentResponse[];
   reactions: TReactionsCount;
   bookmarked: boolean;
-  // user_details: TUserModelMetaData;
 };
 
 export type TPostReaction = {
@@ -87,7 +86,6 @@ export type TPostResponse = Omit<TPostModel, "reactions" | "shares"> & {
   comments?: TCommentModel[];
   bookmarked: boolean;
   shares: { count: number; shared: boolean };
-  // user_details: TUserModelMetaData;
 };
 
 export type TBookmarkModel = {
@@ -110,4 +108,5 @@ type TUserModelMetaData = {
   phone_number: string;
   gender: string;
   image: string | null;
+  username?: string;
 };
