@@ -78,6 +78,20 @@ export const parse_posts = async (
 };
 
 /**
+ * * Function to parse the user data retrieved from the collection and returns only the user metadata
+ * @param user The user data as returned from the collection
+ */
+const transform_user_details = (user: TUserModel) => {
+  const parsed_user = (user as any).metadata._doc;
+
+  // * If the user hasn't uploaded his/her image, i.e. the image field doesn't exist, add it
+  if (!parsed_user.image) parsed_user.image = null;
+
+  parsed_user.username = user.username;
+  return parsed_user;
+};
+
+/**
  * * Function to retrieve the details of a user
  * @param user_id The user_id of the user whose details are to be retrieved
  * @returns The details of the user, i.e. the user's firstname, lastname, image, gender, etc
@@ -86,21 +100,9 @@ const get_user_details = async (user_id: Schema.Types.ObjectId) => {
   // * Retrieve the user with this user_id from the collection
   const user = await UserModel.findById(user_id).catch((e) => {});
 
-  // * If the user hasn't uploaded his/her image, i.e. the image field doesn't exist, add it
-  if (user && !user?.metadata?.image) user.metadata.image = null;
+  if (!user) return;
 
-  return user?.metadata;
-};
-
-/**
- * * Function to parse the user data retrieved from the collection and returns only the user metadata
- * @param user The user data as returned from the collection
- */
-const transform_user_details = (user: TUserModel) => {
-  // * If the user hasn't uploaded his/her image, i.e. the image field doesn't exist, add it
-  if (user && !user?.metadata?.image) user.metadata.image = null;
-
-  return user?.metadata;
+  return transform_user_details(user);
 };
 
 /**
