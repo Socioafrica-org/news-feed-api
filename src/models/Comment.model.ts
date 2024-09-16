@@ -2,7 +2,7 @@ import { model, Schema } from "mongoose";
 import { TCommentModel } from "../utils/types";
 
 const comment: Schema<TCommentModel> = new Schema({
-  username: { type: String, required: true },
+  user: { required: true, type: Schema.Types.ObjectId, ref: "User" },
   content: { type: String, required: true },
   parent_comment_id: { type: Schema.Types.ObjectId },
   reply_to: { type: String },
@@ -12,7 +12,7 @@ const comment: Schema<TCommentModel> = new Schema({
     required: true,
     type: [
       {
-        username: String,
+        user: { required: true, type: Schema.Types.ObjectId, ref: "User" },
         reaction: {
           type: String,
           enum: { values: ["like", "dislike"] },

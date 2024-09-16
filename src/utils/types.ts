@@ -21,7 +21,7 @@ type TReactionsCount = {
 
 export type TPostModel = {
   visibility: { mode: TVisibilityModes; community_id: string };
-  username: string;
+  user: Schema.Types.ObjectId;
   content: string;
   file_urls: string[];
   topic: string;
@@ -33,7 +33,7 @@ export type TPostModel = {
 };
 
 export type TCommentModel = {
-  username: string;
+  user: Schema.Types.ObjectId;
   content: string;
   parent_comment_id: Schema.Types.ObjectId;
   reply_to: string;
@@ -46,17 +46,17 @@ export type TCommentResponse = Omit<TCommentModel, "reactions"> & {
   replies?: TCommentResponse[];
   reactions: TReactionsCount;
   bookmarked: boolean;
-  user_details: TUserModelMetaData;
+  // user_details: TUserModelMetaData;
 };
 
 export type TPostReaction = {
-  username: string;
+  user: Schema.Types.ObjectId;
   reaction: TReactions;
   post_id: Schema.Types.ObjectId;
 };
 
 export type TCommentReaction = {
-  username: string;
+  user: Schema.Types.ObjectId;
   reaction: TReactions;
 };
 
@@ -87,11 +87,11 @@ export type TPostResponse = Omit<TPostModel, "reactions" | "shares"> & {
   comments?: TCommentModel[];
   bookmarked: boolean;
   shares: { count: number; shared: boolean };
-  user_details: TUserModelMetaData;
+  // user_details: TUserModelMetaData;
 };
 
 export type TBookmarkModel = {
-  username: string;
+  user: { required: true; type: Schema.Types.ObjectId; ref: "User" };
   post_id: string;
   comment_id: string;
 };

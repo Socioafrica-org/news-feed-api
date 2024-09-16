@@ -4,7 +4,7 @@ import { TPostModel } from "../utils/types";
 const post: Schema<TPostModel> = new Schema({
   content: { required: true, type: String },
   file_urls: { type: [String] },
-  username: { required: true, type: String },
+  user: { required: true, type: Schema.Types.ObjectId, ref: "User" },
   visibility: {
     required: true,
     type: {
@@ -25,7 +25,7 @@ const post: Schema<TPostModel> = new Schema({
     required: true,
     type: [
       {
-        username: String,
+        user: { required: true, type: Schema.Types.ObjectId, ref: "User" },
         reaction: {
           type: String,
           enum: { values: ["like", "dislike"] },

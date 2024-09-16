@@ -7,6 +7,7 @@ import {
   TCommentResponse,
   TPostModel,
   TCommentModel,
+  TUserModel,
 } from "./types";
 import CommentModel from "../models/Comment.model";
 import bookmark_model from "../models/Bookmark.model";
@@ -49,7 +50,7 @@ export const upload_file_to_cloudinary = async (
 /**
  * * Function responsible for parsing the list posts retrieved from the post collection for the get posts endpoint response body
  * @param posts The list of posts from the Post collection
- * @param username The username of the user with the current access token (the signed in user)
+ * @param user_id The user_id of the user with the current access token (the signed in user)
  * @returns A list of posts
  */
 export const parse_posts = async (
@@ -57,14 +58,14 @@ export const parse_posts = async (
     TPostModel & {
       _id: Types.ObjectId;
     })[],
-  username: string
+  user_id: Schema.Types.ObjectId | string
 ) => {
   const posts_to_be_returned: TPostResponse[] = [];
 
   // * Loop through each post in order to add some properties for the response body
   for (const post of posts) {
     // * Parse the post data
-    const parsed_post = await parse_single_post(post, username);
+    const parsed_post = await parse_single_post(post, user_id);
 
     // * If the above function returned undefined. e.g. in the case of a shared post whose parent post could not be found, skip this post
     if (!parsed_post) continue;
@@ -78,13 +79,24 @@ export const parse_posts = async (
 
 /**
  * * Function to retrieve the details of a user
- * @param username The username of the user whose details are to be retrieved
+ * @param user_id The user_id of the user whose details are to be retrieved
  * @returns The details of the user, i.e. the user's firstname, lastname, image, gender, etc
  */
-const get_user_details = async (username: string) => {
-  // * Retrieve the user with this username from the collection
-  const user = await UserModel.findOne({ username }).catch((e) => {});
+const get_user_details = async (user_id: Schema.Types.ObjectId) => {
+  // * Retrieve the user with this user_id from the collection
+  const user = await UserModel.findById(user_id).catch((e) => {});
 
+  // * If the user hasn't uploaded his/her image, i.e. the image field doesn't exist, add it
+  if (user && !user?.metadata?.image) user.metadata.image = null;
+
+  return user?.metadata;
+};
+
+/**
+ * * Function to parse the user data retrieved from the collection and returns only the user metadata
+ * @param user The user data as returned from the collection
+ */
+const transform_user_details = (user: TUserModel) => {
   // * If the user hasn't uploaded his/her image, i.e. the image field doesn't exist, add it
   if (user && !user?.metadata?.image) user.metadata.image = null;
 
@@ -94,7 +106,7 @@ const get_user_details = async (username: string) => {
 /**
  * * Function responsible for parsing a post from the collection for the post endpoint response body
  * @param post_details_to_be_parsed The post from the post collection to be parsed for the response body
- * @param username The username of the user wo made this request
+ * @param user_id The user_id of the user wo made this request
  * @param config The configuration. I.e. determines if the post comments should be returned
  * @returns The parsed post
  */
@@ -103,7 +115,7 @@ export const parse_single_post = async (
     TPostModel & {
       _id: Types.ObjectId;
     },
-  username: string,
+  user_id: Schema.Types.ObjectId | string,
   config?: {
     comments: boolean;
   }
@@ -115,9 +127,11 @@ export const parse_single_post = async (
     // * If it is a shared post, retrieve the original post details from the collection
     const original_post = await PostModel.findOne({
       _id: post.parent_post_id,
-    }).catch((e) =>
-      console.error("An error occured while retrieving the parent post", e)
-    );
+    })
+      .populate("user")
+      .catch((e) =>
+        console.error("An error occured while retrieving the parent post", e)
+      );
     // * If the original post was not found, return undefined
     if (!original_post)
       return console.error("The original post could not be found");
@@ -129,7 +143,9 @@ export const parse_single_post = async (
   // * Get the comments for this post
   const all_comments = await CommentModel.find({
     post_id: post_details_to_be_parsed._id,
-  }).catch((e) => []);
+  })
+    .populate("user")
+    .catch((e) => []);
 
   // * Parse each comment to include the comment metadata, e.g if it was bookmarked, it's reactions, the details of the user who shared it
   const parsed_comments: (TCommentResponse & {
@@ -139,7 +155,7 @@ export const parse_single_post = async (
   // * Loop through the retrieved comments for each post and parse each comment
   for (const comment of all_comments) {
     // * The parsed comment containing all the necessary metadata
-    const parsed_comment = await parse_comment(comment, username);
+    const parsed_comment = await parse_comment(comment, user_id);
 
     parsed_comments.push(parsed_comment);
   }
@@ -163,10 +179,10 @@ export const parse_single_post = async (
         })
     : undefined;
 
-  // * Check if an existing bookmark of this post/comment and username exists in the collection
+  // * Check if an existing bookmark of this post/comment and user_id exists in the collection
   const existing_bookmark = await bookmark_model
     .findOne({
-      username,
+      user: user_id,
       post_id: post_details_to_be_parsed._id,
     })
     .catch((e) => console.error("Error retrieving the bookmark", e));
@@ -181,15 +197,19 @@ export const parse_single_post = async (
     parent_post_id: post_details_to_be_parsed._id,
   }).catch((e) => []);
 
-  // * retrieve the details of the user who created this post
-  const user = await get_user_details(post_details_to_be_parsed.username);
+  // * Retrieve the details of the user who created this post
+  const user = !post_details_to_be_parsed.user
+    ? await get_user_details(post_details_to_be_parsed.user)
+    : transform_user_details(
+        post_details_to_be_parsed.user as unknown as TUserModel
+      );
 
   // * The new post response format
   const parsed_post: TPostResponse = {
     ...(post_details_to_be_parsed as any)._doc,
     parent_post_id: post.parent_post_id,
     shared_by: post.shared_by,
-    user_details: user || {},
+    user,
     reactions: {
       like: {
         // * Get the number of likes from the list of the reaction
@@ -199,7 +219,8 @@ export const parse_single_post = async (
         // * Confirms if the user has perfomed this reaction on this post, i.e. has liked this post
         liked: post_details_to_be_parsed.reactions.find(
           (each_post) =>
-            each_post.reaction === "like" && each_post.username === username
+            each_post.reaction === "like" &&
+            each_post.user?.toString() === user_id.toString()
         )
           ? true
           : false,
@@ -212,7 +233,8 @@ export const parse_single_post = async (
         // * Confirms if the user has perfomed this reaction on this post, i.e. has disliked this post
         disliked: post_details_to_be_parsed.reactions.find(
           (each_post) =>
-            each_post.reaction === "dislike" && each_post.username === username
+            each_post.reaction === "dislike" &&
+            each_post.user?.toString() === user_id.toString()
         )
           ? true
           : false,
@@ -222,7 +244,9 @@ export const parse_single_post = async (
     shares: {
       count: shares.length,
       // * Confirm if this user has previously shared this post
-      shared: shares.find((share) => share.username === username)
+      shared: shares.find(
+        (share) => share.user?.toString() === user_id.toString()
+      )
         ? true
         : false,
     },
@@ -237,7 +261,7 @@ export const parse_single_post = async (
 /**
  * * Function responsible for parsing a comment from the collection for the comment endpoint response body
  * @param comment The comment data from the collection
- * @param username The username of the user making the request (from the access token)
+ * @param user_id The user_id of the user making the request (from the access token)
  * @returns The parsed comment data
  */
 export const parse_comment = async (
@@ -245,12 +269,12 @@ export const parse_comment = async (
     TCommentModel & {
       _id: Types.ObjectId;
     },
-  username: string
+  user_id: Schema.Types.ObjectId | string
 ): Promise<TCommentResponse> => {
-  // * Check if an existing bookmark of this post/comment and username exists in the collection
+  // * Check if an existing bookmark of this post/comment and user_id exists in the collection
   const existing_bookmark = await bookmark_model
     .findOne({
-      username,
+      user: user_id,
       comment_id: comment._id,
     })
     .catch((e) => console.error("Error retrieving the bookmark", e));
@@ -260,12 +284,14 @@ export const parse_comment = async (
     console.error("Error retrieving the bookmark");
   }
 
-  // * retrieve the details of the user who created this post
-  const user = await get_user_details(comment.username);
+  // * Retrieve the details of the user who created this post
+  const user = !comment.user
+    ? await get_user_details(comment.user)
+    : transform_user_details(comment.user as unknown as TUserModel);
 
   const parsed_comment: TCommentResponse = {
     ...(comment as any)._doc,
-    user_details: user || {},
+    user,
     reactions: {
       like: {
         // * Get the number of likes from the list of the reaction
@@ -276,7 +302,7 @@ export const parse_comment = async (
         liked: comment.reactions.find(
           (each_comment) =>
             each_comment.reaction === "like" &&
-            each_comment.username === username
+            each_comment.user?.toString() === user_id.toString()
         )
           ? true
           : false,
@@ -290,7 +316,7 @@ export const parse_comment = async (
         disliked: comment.reactions.find(
           (each_comment) =>
             each_comment.reaction === "dislike" &&
-            each_comment.username === username
+            each_comment.user?.toString() === user_id.toString()
         )
           ? true
           : false,

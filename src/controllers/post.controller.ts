@@ -24,7 +24,7 @@ export const create_post = async (
   res: Response
 ) => {
   try {
-    const { username } = req.token_data;
+    const { user_id } = req.token_data;
     const { visibility, content } = req.body;
     const files = (req.files as Express.Multer.File[]) || [];
     const uploaded_files_urls: string[] = [];
@@ -53,7 +53,7 @@ export const create_post = async (
     const created_post = await PostModel.create({
       visibility: post_visibility,
       content,
-      username,
+      user: user_id,
       topic: req.body.topic || undefined,
       file_urls: uploaded_files_urls,
       date_created: new Date(),
@@ -84,12 +84,12 @@ export const get_post = async (
   res: Response
 ) => {
   try {
-    const { username } = req.token_data;
+    const { user_id } = req.token_data;
     const { post_id } = req.params;
     // * Retrieve post from the posts collection via it's ID
-    const post_response = await PostModel.findOne({ _id: post_id }).catch((e) =>
-      console.error("Could not retreive post", e)
-    );
+    const post_response = await PostModel.findOne({ _id: post_id })
+      .populate("user")
+      .catch((e) => console.error("Could not retreive post", e));
     // * If error retrieving post
     if (post_response === undefined) {
       console.error("Could not retreive post");
@@ -103,7 +103,7 @@ export const get_post = async (
     // * Parse the post, add parameters for the response body, e.g. the reactions, comments, bookmarked state, no. of times shared, etc...
     const post: TPostResponse | void = await parse_single_post(
       post_response,
-      username,
+      user_id,
       { comments: true }
     );
 
@@ -128,7 +128,7 @@ export const get_posts = async (
   } & TExtendedRequestTokenData,
   res: Response
 ) => {
-  const { username } = req.token_data;
+  const { user_id } = req.token_data;
   const { pagination } = req.body;
   const limit = 10;
   const amount_to_skip = (pagination - 1) * limit;
@@ -140,6 +140,7 @@ export const get_posts = async (
         $or: req.topics.map((topic) => ({ topic: topic })),
         "visibility.mode": "all",
       })
+        .populate("user")
         .sort({ date_created: -1 })
         .skip(amount_to_skip)
         .limit(limit)
@@ -160,6 +161,7 @@ export const get_posts = async (
           topic: undefined,
           "visibility.mode": "all",
         })
+          .populate("user")
           .sort({ date_created: -1 })
           .skip(amount_to_skip)
           .limit(limit)
@@ -180,7 +182,7 @@ export const get_posts = async (
         // * Parse each post in the list, return their reaction count, comment count, bookmarked state, total no. of times shared, etc...
         const posts_not_belonging_to_topics_to_be_returned = await parse_posts(
           posts_not_belonging_to_topics,
-          username
+          user_id
         );
 
         // * Return the posts with no topic
@@ -192,7 +194,7 @@ export const get_posts = async (
       // * Parse each post in the list, return their reaction count, comment count, bookmarked state, total no. of times shared, etc...
       const posts_belonging_to_topics_to_be_returned = await parse_posts(
         posts_belonging_to_topics,
-        username
+        user_id
       );
 
       // * Return the posts with the specified topics
@@ -204,6 +206,7 @@ export const get_posts = async (
     const all_posts = await PostModel.find({
       "visibility.mode": "all",
     })
+      .populate("user")
       .sort({ date_created: -1 })
       .skip(amount_to_skip)
       .limit(limit)
@@ -221,7 +224,7 @@ export const get_posts = async (
     if (all_posts.length < 1) return res.status(404).json("No posts available");
 
     // * Parse each post in the list, return their reaction count, comment count, bookmarked state, total no. of times shared, etc...
-    const posts_to_be_returned = await parse_posts(all_posts, username);
+    const posts_to_be_returned = await parse_posts(all_posts, user_id);
     // * Return all the posts in the collection irrespective of their topics
     return res.status(200).json(posts_to_be_returned);
   } catch (error) {

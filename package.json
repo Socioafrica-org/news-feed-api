@@ -6,8 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node ./build/index.js",
-    "dev": "nodemon ./build/index.js",
     "build": "tsc --build",
+    "dev": "npm run build && nodemon ./build/index.js",
     "watch": "tsc -w",
     "debug": "nodemon ./src/index.ts"
   },
