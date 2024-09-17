@@ -102,11 +102,13 @@ export type TUserModel = {
   metadata: TUserModelMetaData;
 };
 
-type TUserModelMetaData = {
+export type TUserModelMetaData = {
   first_name: string;
   last_name: string;
   phone_number: string;
   gender: string;
-  image: string | null;
+  image?: string | null;
+  cover_image?: string | null;
+  bio?: string | null;
   username?: string;
 };

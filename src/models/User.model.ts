@@ -41,6 +41,12 @@ const user_details: Schema<TUserModel> = new Schema({
       image: {
         type: String,
       },
+      cover_image: {
+        type: String,
+      },
+      bio: {
+        type: String,
+      },
     },
   },
 });
