@@ -7,6 +7,8 @@ export type TTopicModel = {
 
 type TReactions = "like" | "dislike";
 type TVisibilityModes = "all" | "community" | "private";
+type TCommunityVisibilityModes = "all" | "manual";
+type TCommunityMemberRoles = "super_admin" | "admin" | "member";
 
 type TReactionsCount = {
   like: {
@@ -90,8 +92,8 @@ export type TPostResponse = Omit<TPostModel, "reactions" | "shares"> & {
 
 export type TBookmarkModel = {
   user: { required: true; type: Schema.Types.ObjectId; ref: "User" };
-  post_id: string;
-  comment_id: string;
+  post_id: Schema.Types.ObjectId;
+  comment_id: Schema.Types.ObjectId;
 };
 
 export type TUserModel = {
@@ -111,4 +113,36 @@ export type TUserModelMetaData = {
   cover_image?: string | null;
   bio?: string | null;
   username?: string;
+};
+
+export type TFollowerModel = {
+  user: Schema.Types.ObjectId;
+  following: Schema.Types.ObjectId;
+};
+
+export type TCommunityModel = {
+  name: string;
+  description: string;
+  visibility: TCommunityVisibilityModes;
+};
+
+export type TCommunityMemberModel = {
+  user: Schema.Types.ObjectId;
+  community: Schema.Types.ObjectId;
+  role: TCommunityMemberRoles;
+};
+
+export type TUserDetailResponse = TUserModelMetaData & {
+  followers_count: number;
+  followees_count: number;
+  communities_count: number;
+  posts_count: number;
+};
+
+export type TFollowerResponse = Omit<TFollowerModel, "user"> & {
+  user: TUserModelMetaData;
+};
+
+export type TFolloweeResponse = Omit<TFollowerModel, "following"> & {
+  following: TUserModelMetaData;
 };

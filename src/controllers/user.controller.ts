@@ -1,8 +1,29 @@
 import { Request, Response } from "express";
-import { TExtendedRequestTokenData, TUserModelMetaData } from "../utils/types";
+import {
+  TCommentResponse,
+  TCommunityMemberModel,
+  TExtendedRequestTokenData,
+  TFolloweeResponse,
+  TFollowerResponse,
+  TPostResponse,
+  TUserDetailResponse,
+  TUserModelMetaData,
+} from "../utils/types";
 import UserModel from "../models/User.model";
 import { compare, hash } from "bcrypt";
-import { upload_file_to_cloudinary } from "../utils/utils";
+import {
+  retrieve_user_communities,
+  retrieve_user_disliked_posts,
+  retrieve_user_followees,
+  retrieve_user_followers,
+  retrieve_user_liked_posts,
+  retrieve_user_posts,
+  retrieve_user_saved_comments,
+  retrieve_user_saved_posts,
+  transform_user_details,
+  upload_file_to_cloudinary,
+} from "../utils/utils";
+import follower_model from "../models/Follower.model";
 
 /**
  * * Function responsible for updating the personal information of a user, e.g. email, username, names, passwords, etc...
@@ -269,6 +290,429 @@ export const edit_user_account_info = async (
     }
 
     return res.status(200).json("User updated successfully");
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json("Internal server error");
+  }
+};
+
+/**
+ * * Function responsible for retrieving user details, followere, posts, communities, etc
+ * @param req The Express Js reqest object
+ * @param res The Express Js response object
+ * @returns Void
+ */
+export const get_user = async (
+  req: Request<{ username: string }>,
+  res: Response<TUserDetailResponse | string>
+) => {
+  try {
+    const { username } = req.params;
+
+    // * Retrieve the user with this username
+    const user = await UserModel.findOne({ username });
+
+    // * if the user was not found, return 404 error
+    if (!user) {
+      console.error(`User ${username} not found`);
+      return res.status(404).json("User not found");
+    }
+
+    // * Retrieve the total count of users following this user
+    const followers_count = (await retrieve_user_followers(user._id)) as number;
+
+    // * Retrieve the total count of users this user is following
+    const followees_count = (await retrieve_user_followees(user._id)) as number;
+
+    // * Retrive the total count of communities this user is a member of
+    const communities_count = (await retrieve_user_communities(
+      user._id
+    )) as number;
+
+    // * Retrieve the total count of posts uploaded/shared by this user
+    const posts_count = (await retrieve_user_posts(user._id)) as number;
+
+    // * Assign all the above variables to the response object
+    const parsed_user: TUserDetailResponse = {
+      ...(transform_user_details(user) as TUserModelMetaData),
+      followers_count,
+      followees_count,
+      communities_count,
+      posts_count,
+    };
+
+    return res.status(200).json(parsed_user);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json("Internal server error");
+  }
+};
+
+/**
+ * * Function responsible for retrieving posts uploaded/shared by user
+ * @param req The Express Js reqest object
+ * @param res The Express Js response object
+ * @returns Void
+ */
+export const get_user_posts = async (
+  req: Request<{ username: string }, any, { pagination: number }>,
+  res: Response<TPostResponse[] | string>
+) => {
+  try {
+    const {
+      params: { username },
+      body: { pagination },
+    } = req;
+
+    // * Retrieve the user with this username
+    const user = await UserModel.findOne({ username });
+
+    // * if the user was not found, return 404 error
+    if (!user) {
+      console.error(`User ${username} not found`);
+      return res.status(404).json("User not found");
+    }
+
+    // * Retrieve the list of posts uploaded/shared by this user
+    const posts = (await retrieve_user_posts(user._id, {
+      detailed: true,
+      pagination,
+    })) as TPostResponse[];
+
+    return res.status(200).json(posts);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json("Internal server error");
+  }
+};
+
+/**
+ * * Function responsible for retrieving posts liked by user
+ * @param req The Express Js reqest object
+ * @param res The Express Js response object
+ * @returns Void
+ */
+export const get_user_liked_posts = async (
+  req: Request<{ username: string }, any, { pagination: number }>,
+  res: Response<TPostResponse[] | string>
+) => {
+  try {
+    const {
+      params: { username },
+      body: { pagination },
+    } = req;
+
+    // * Retrieve the user with this username
+    const user = await UserModel.findOne({ username });
+
+    // * if the user was not found, return 404 error
+    if (!user) {
+      console.error(`User ${username} not found`);
+      return res.status(404).json("User not found");
+    }
+
+    // * Retrieve the list of posts uploaded/shared by this user
+    const liked_posts = (await retrieve_user_liked_posts(user._id, {
+      detailed: true,
+      pagination,
+    })) as TPostResponse[];
+
+    return res.status(200).json(liked_posts);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json("Internal server error");
+  }
+};
+
+/**
+ * * Function responsible for retrieving posts disliked by user
+ * @param req The Express Js reqest object
+ * @param res The Express Js response object
+ * @returns Void
+ */
+export const get_user_disliked_posts = async (
+  req: Request<{ username: string }, any, { pagination: number }>,
+  res: Response<TPostResponse[] | string>
+) => {
+  try {
+    const {
+      params: { username },
+      body: { pagination },
+    } = req;
+
+    // * Retrieve the user with this username
+    const user = await UserModel.findOne({ username });
+
+    // * if the user was not found, return 404 error
+    if (!user) {
+      console.error(`User ${username} not found`);
+      return res.status(404).json("User not found");
+    }
+
+    // * Retrieve the list of posts uploaded/shared by this user
+    const disliked_posts = (await retrieve_user_disliked_posts(user._id, {
+      detailed: true,
+      pagination,
+    })) as TPostResponse[];
+
+    return res.status(200).json(disliked_posts);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json("Internal server error");
+  }
+};
+
+/**
+ * * Function responsible for retrieving a user's followers
+ * @param req The Express Js reqest object
+ * @param res The Express Js response object
+ * @returns Void
+ */
+export const get_user_followers = async (
+  req: Request<{ username: string }, any, { pagination: number }>,
+  res: Response<TUserModelMetaData[] | string>
+) => {
+  try {
+    const {
+      params: { username },
+      body: { pagination },
+    } = req;
+
+    // * Retrieve the user with this username
+    const user = await UserModel.findOne({ username });
+
+    // * if the user was not found, return 404 error
+    if (!user) {
+      console.error(`User ${username} not found`);
+      return res.status(404).json("User not found");
+    }
+
+    // * Retrieve the list of users following this user
+    const followers = (await retrieve_user_followers(user._id, {
+      detailed: true,
+      pagination,
+    })) as TUserModelMetaData[];
+
+    return res.status(200).json(followers);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json("Internal server error");
+  }
+};
+
+/**
+ * * Function responsible for retrieving a user's followees, i.e. users followed by this user
+ * @param req The Express Js reqest object
+ * @param res The Express Js response object
+ * @returns Void
+ */
+export const get_user_followees = async (
+  req: Request<{ username: string }, any, { pagination: number }>,
+  res: Response<TUserModelMetaData[] | string>
+) => {
+  try {
+    const {
+      params: { username },
+      body: { pagination },
+    } = req;
+
+    // * Retrieve the user with this username
+    const user = await UserModel.findOne({ username });
+
+    // * if the user was not found, return 404 error
+    if (!user) {
+      console.error(`User ${username} not found`);
+      return res.status(404).json("User not found");
+    }
+
+    // * Retrieve the list of users followed by this user
+    const followees = (await retrieve_user_followees(user._id, {
+      detailed: true,
+      pagination,
+    })) as TUserModelMetaData[];
+
+    return res.status(200).json(followees);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json("Internal server error");
+  }
+};
+
+/**
+ * * Function responsible for retrieving the list of communities a user is a part of
+ * @param req The Express Js reqest object
+ * @param res The Express Js response object
+ * @returns Void
+ */
+export const get_user_communities = async (
+  req: Request<{ username: string }, any, { pagination: number }>,
+  res: Response<TCommunityMemberModel[] | string>
+) => {
+  try {
+    const {
+      params: { username },
+      body: { pagination },
+    } = req;
+
+    // * Retrieve the user with this username
+    const user = await UserModel.findOne({ username });
+
+    // * if the user was not found, return 404 error
+    if (!user) {
+      console.error(`User ${username} not found`);
+      return res.status(404).json("User not found");
+    }
+
+    // * Retrieve the list of communities this user is a part of
+    const communities = (await retrieve_user_communities(user._id, {
+      detailed: true,
+      pagination,
+    })) as TCommunityMemberModel[];
+
+    return res.status(200).json(communities);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json("Internal server error");
+  }
+};
+
+/**
+ * * Function responsible for retrieving the list of communities a user is a part of
+ * @param req The Express Js reqest object
+ * @param res The Express Js response object
+ * @returns Void
+ */
+export const follow_unfollow_user = async (
+  req: Request<{ username: string }> & TExtendedRequestTokenData,
+  res: Response<string>
+) => {
+  try {
+    const {
+      params: { username },
+      token_data: { user_id },
+    } = req;
+
+    // * Retrieve the user with this username, i.e. the user to be followed
+    const user_to_follow = await UserModel.findOne({ username });
+
+    // * if the user to be followed was not found, return 404 error
+    if (!user_to_follow) {
+      console.error(`User ${username} not found`);
+      return res.status(404).json("User not found");
+    }
+
+    // * If the user tries to follow himself/herself (via the API), return 500 error
+    if (user_id === user_to_follow._id.toString()) {
+      console.error("User cannot follow itself");
+      return res.status(500).json("User cannot follow itself");
+    }
+
+    // * Check if the user (with username) has been previously followed by this user (with access token/signed in user)
+    const user_has_been_followed = await follower_model.findOne({
+      user: user_id,
+      following: user_to_follow._id,
+    });
+
+    // * If the user (with username) has been previously followed by this user (with access token/signed in user)
+    if (user_has_been_followed) {
+      // * Remove user with this user id in the access token (signed in user) from the list of followers of the user with the username
+      await follower_model.deleteOne({
+        user: user_id,
+        following: user_to_follow._id,
+      });
+
+      return res
+        .status(200)
+        .json(
+          `User successfully removed from the list of ${username} followers`
+        );
+    }
+
+    // * Add user with this user id in the access token (signed in user) to the list of followers of the user with the username
+    await follower_model.create({
+      user: user_id,
+      following: user_to_follow._id,
+    });
+
+    return res
+      .status(200)
+      .json(`User successfully added to the list of ${username} followers`);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json("Internal server error");
+  }
+};
+
+/**
+ * * Function responsible for retrieving posts saved by user
+ * @param req The Express Js reqest object
+ * @param res The Express Js response object
+ * @returns Void
+ */
+export const get_user_saved_posts = async (
+  req: Request<{ username: string }, any, { pagination: number }>,
+  res: Response<TPostResponse[] | string>
+) => {
+  try {
+    const {
+      params: { username },
+      body: { pagination },
+    } = req;
+
+    // * Retrieve the user with this username
+    const user = await UserModel.findOne({ username });
+
+    // * if the user was not found, return 404 error
+    if (!user) {
+      console.error(`User ${username} not found`);
+      return res.status(404).json("User not found");
+    }
+
+    // * Retrieve the list of posts saved/bookmarked by this user
+    const saved_posts = (await retrieve_user_saved_posts(user._id, {
+      detailed: true,
+      pagination,
+    })) as TPostResponse[];
+
+    return res.status(200).json(saved_posts);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json("Internal server error");
+  }
+};
+
+/**
+ * * Function responsible for retrieving comments saved by user
+ * @param req The Express Js reqest object
+ * @param res The Express Js response object
+ * @returns Void
+ */
+export const get_user_saved_comments = async (
+  req: Request<{ username: string }, any, { pagination: number }>,
+  res: Response<TCommentResponse[] | string>
+) => {
+  try {
+    const {
+      params: { username },
+      body: { pagination },
+    } = req;
+
+    // * Retrieve the user with this username
+    const user = await UserModel.findOne({ username });
+
+    // * if the user was not found, return 404 error
+    if (!user) {
+      console.error(`User ${username} not found`);
+      return res.status(404).json("User not found");
+    }
+
+    // * Retrieve the list of comments saved/bookmarked by this user
+    const saved_comments = (await retrieve_user_saved_comments(user._id, {
+      detailed: true,
+      pagination,
+    })) as TCommentResponse[];
+
+    return res.status(200).json(saved_comments);
   } catch (error) {
     console.error(error);
     return res.status(500).json("Internal server error");
