@@ -133,6 +133,7 @@ export type TCommunityMemberModel = {
 };
 
 export type TUserDetailResponse = TUserModelMetaData & {
+  email: string;
   followers_count: number;
   followees_count: number;
   communities_count: number;
