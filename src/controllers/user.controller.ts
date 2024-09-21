@@ -355,13 +355,13 @@ export const get_user = async (
  * @returns Void
  */
 export const get_user_posts = async (
-  req: Request<{ username: string }, any, { pagination: number }>,
+  req: Request<{ username: string }, any, any, { pagination: number }>,
   res: Response<TPostResponse[] | string>
 ) => {
   try {
     const {
       params: { username },
-      body: { pagination },
+      query: { pagination },
     } = req;
 
     // * Retrieve the user with this username
@@ -393,13 +393,13 @@ export const get_user_posts = async (
  * @returns Void
  */
 export const get_user_liked_posts = async (
-  req: Request<{ username: string }, any, { pagination: number }>,
+  req: Request<{ username: string }, any, any, { pagination: number }>,
   res: Response<TPostResponse[] | string>
 ) => {
   try {
     const {
       params: { username },
-      body: { pagination },
+      query: { pagination },
     } = req;
 
     // * Retrieve the user with this username
@@ -431,13 +431,13 @@ export const get_user_liked_posts = async (
  * @returns Void
  */
 export const get_user_disliked_posts = async (
-  req: Request<{ username: string }, any, { pagination: number }>,
+  req: Request<{ username: string }, any, any, { pagination: number }>,
   res: Response<TPostResponse[] | string>
 ) => {
   try {
     const {
       params: { username },
-      body: { pagination },
+      query: { pagination },
     } = req;
 
     // * Retrieve the user with this username
@@ -469,13 +469,13 @@ export const get_user_disliked_posts = async (
  * @returns Void
  */
 export const get_user_followers = async (
-  req: Request<{ username: string }, any, { pagination: number }>,
+  req: Request<{ username: string }, any, any, { pagination: number }>,
   res: Response<TUserModelMetaData[] | string>
 ) => {
   try {
     const {
       params: { username },
-      body: { pagination },
+      query: { pagination },
     } = req;
 
     // * Retrieve the user with this username
@@ -507,13 +507,13 @@ export const get_user_followers = async (
  * @returns Void
  */
 export const get_user_followees = async (
-  req: Request<{ username: string }, any, { pagination: number }>,
+  req: Request<{ username: string }, any, any, { pagination: number }>,
   res: Response<TUserModelMetaData[] | string>
 ) => {
   try {
     const {
       params: { username },
-      body: { pagination },
+      query: { pagination },
     } = req;
 
     // * Retrieve the user with this username
@@ -545,13 +545,13 @@ export const get_user_followees = async (
  * @returns Void
  */
 export const get_user_communities = async (
-  req: Request<{ username: string }, any, { pagination: number }>,
+  req: Request<{ username: string }, any, any, { pagination: number }>,
   res: Response<TCommunityMemberModel[] | string>
 ) => {
   try {
     const {
       params: { username },
-      body: { pagination },
+      query: { pagination },
     } = req;
 
     // * Retrieve the user with this username
@@ -650,13 +650,13 @@ export const follow_unfollow_user = async (
  * @returns Void
  */
 export const get_user_saved_posts = async (
-  req: Request<{ username: string }, any, { pagination: number }>,
+  req: Request<{ username: string }, any, any, { pagination: number }>,
   res: Response<TPostResponse[] | string>
 ) => {
   try {
     const {
       params: { username },
-      body: { pagination },
+      query: { pagination },
     } = req;
 
     // * Retrieve the user with this username
@@ -688,13 +688,13 @@ export const get_user_saved_posts = async (
  * @returns Void
  */
 export const get_user_saved_comments = async (
-  req: Request<{ username: string }, any, { pagination: number }>,
+  req: Request<{ username: string }, any, any, { pagination: number }>,
   res: Response<TCommentResponse[] | string>
 ) => {
   try {
     const {
       params: { username },
-      body: { pagination },
+      query: { pagination },
     } = req;
 
     // * Retrieve the user with this username
