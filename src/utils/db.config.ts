@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const DB_NAME = "socio_africa_demo_news_feed";
+const DB_NAME = "socio_africa";
 const connect_mongodb = async () => {
   const URL =
     process.env.NODE_ENV === "dev" || process.env.NODE_ENV === "test"
