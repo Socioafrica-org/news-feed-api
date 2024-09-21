@@ -335,6 +335,7 @@ export const get_user = async (
     // * Assign all the above variables to the response object
     const parsed_user: TUserDetailResponse = {
       ...(transform_user_details(user) as TUserModelMetaData),
+      email: user.email,
       followers_count,
       followees_count,
       communities_count,
