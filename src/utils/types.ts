@@ -123,6 +123,7 @@ export type TFollowerModel = {
 export type TCommunityModel = {
   name: string;
   description: string;
+  topics: string[];
   visibility: TCommunityVisibilityModes;
 };
 
@@ -138,6 +139,7 @@ export type TUserDetailResponse = TUserModelMetaData & {
   followees_count: number;
   communities_count: number;
   posts_count: number;
+  is_following: boolean;
 };
 
 export type TFollowerResponse = Omit<TFollowerModel, "user"> & {

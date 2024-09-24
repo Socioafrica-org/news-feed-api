@@ -19,7 +19,7 @@ export const validate_token = async (
       .post<
         any,
         AxiosResponse<any, { tokens: Record<any, any>; data: Record<any, any> }>
-      >("/api/validate-token", request_body)
+      >("/api/token/validate", request_body)
       .catch((e: AxiosError) => {
         console.error(e.message);
 
@@ -52,6 +52,34 @@ export const validate_token = async (
 
     // * Add the parsed token response data to the request
     req.token_data = token_response.data.data;
+
+    // * Proceed to the next step
+    next();
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json("Invernal server error");
+  }
+};
+
+// * Middleware to decode the access token passed to the request
+export const decode_token = async (
+  req: Request & TExtendedRequestTokenData,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const request_body = {
+      cookies: req.cookies,
+      headers: req.headers,
+    };
+    // * Make a request to the auth backend microservice to decode the user's token
+    const token_response = await auth_instance.post<
+      any,
+      AxiosResponse<any, { tokens: Record<any, any>; data: Record<any, any> }>
+    >("/api/token/decode", request_body);
+
+    // * Add the parsed token response data to the request
+    req.token_data = token_response.data;
 
     // * Proceed to the next step
     next();

@@ -3,7 +3,7 @@ import {
   edit_bookmark,
   get_user_bookmarks,
 } from "../controllers/bookmark.controller";
-import { validate_token } from "../middlewares/validate-token.middleware";
+import { validate_token } from "../middlewares/token.middleware";
 
 const bookmark_router = Router();
 

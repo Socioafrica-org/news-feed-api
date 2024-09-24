@@ -12,6 +12,7 @@ import {
 import UserModel from "../models/User.model";
 import { compare, hash } from "bcrypt";
 import {
+  check_user_following,
   retrieve_user_communities,
   retrieve_user_disliked_posts,
   retrieve_user_followees,
@@ -69,8 +70,8 @@ export const edit_user_personal_info = async (
     if (username) {
       const username_exists = await UserModel.findOne({ username });
 
-      // * If the username exists, return 500 error
-      if (username_exists) {
+      // * If the username exists and is not the existing username of this user, return 500 error
+      if (username_exists && username !== user_details_to_update.username) {
         console.error(
           `Cannot update user, because username ${username} already exist`
         );
@@ -82,8 +83,8 @@ export const edit_user_personal_info = async (
     if (email) {
       const email_exists = await UserModel.findOne({ email });
 
-      // * If the username exists, return 500 error
-      if (email_exists) {
+      // * If the username exists and is not the existing email address of this user, return 500 error
+      if (email_exists && email !== user_details_to_update.email) {
         console.error(
           `Cannot update user, because email ${email} already exist`
         );
@@ -303,11 +304,14 @@ export const edit_user_account_info = async (
  * @returns Void
  */
 export const get_user = async (
-  req: Request<{ username: string }>,
+  req: Request<{ username: string }> & TExtendedRequestTokenData,
   res: Response<TUserDetailResponse | string>
 ) => {
   try {
-    const { username } = req.params;
+    const {
+      params: { username },
+      token_data: { user_id },
+    } = req;
 
     // * Retrieve the user with this username
     const user = await UserModel.findOne({ username });
@@ -332,6 +336,9 @@ export const get_user = async (
     // * Retrieve the total count of posts uploaded/shared by this user
     const posts_count = (await retrieve_user_posts(user._id)) as number;
 
+    // * Check if the user who made ths request (the signed in user) follows the user with this profile
+    const is_following = await check_user_following(user_id, user._id);
+
     // * Assign all the above variables to the response object
     const parsed_user: TUserDetailResponse = {
       ...(transform_user_details(user) as TUserModelMetaData),
@@ -340,6 +347,7 @@ export const get_user = async (
       followees_count,
       communities_count,
       posts_count,
+      is_following,
     };
 
     return res.status(200).json(parsed_user);

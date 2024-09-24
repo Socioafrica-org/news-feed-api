@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { validate_token } from "../middlewares/validate-token.middleware";
+import { decode_token, validate_token } from "../middlewares/token.middleware";
 import {
   edit_user_account_info,
   edit_user_personal_info,
@@ -21,7 +21,7 @@ const user_router = Router();
 // * Configures the multer library to store the uploaded file data (including the bytes) in the application memory
 const upload = multer({ storage: multer.memoryStorage() });
 
-user_router.get("/:username", get_user);
+user_router.get("/:username", decode_token as any, get_user as any);
 user_router.get("/:username/posts", get_user_posts);
 user_router.get("/:username/posts/like", get_user_liked_posts);
 user_router.get("/:username/posts/dislike", get_user_disliked_posts);

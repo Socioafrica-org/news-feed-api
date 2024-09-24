@@ -4,6 +4,7 @@ import { TCommunityModel } from "../utils/types";
 const community_schema: Schema<TCommunityModel> = new Schema<TCommunityModel>({
   name: { required: true, type: String },
   description: { required: true, type: String },
+  topics: [String],
   visibility: { required: true, type: String, enum: ["all", "manual"] },
 });
 

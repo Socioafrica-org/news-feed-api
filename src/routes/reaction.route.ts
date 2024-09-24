@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { validate_token } from "../middlewares/validate-token.middleware";
+import { validate_token } from "../middlewares/token.middleware";
 import { add_remove_reaction } from "../controllers/reaction.controller";
 
 const reaction_router = Router();

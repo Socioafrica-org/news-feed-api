@@ -5,7 +5,7 @@ import {
   get_posts,
 } from "../controllers/post.controller";
 import multer from "multer";
-import { validate_token } from "../middlewares/validate-token.middleware";
+import { validate_token } from "../middlewares/token.middleware";
 import { get_user_topics } from "../middlewares/get-user-topics.middleware";
 
 // * Configures the multer library to store the uploaded file data (including the bytes) in the application memory

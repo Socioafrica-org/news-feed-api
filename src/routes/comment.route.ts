@@ -4,7 +4,7 @@ import {
   edit_comment,
   get_comment,
 } from "../controllers/comment.controller";
-import { validate_token } from "../middlewares/validate-token.middleware";
+import { validate_token } from "../middlewares/token.middleware";
 
 const comment_router = Router();
 

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { share_unshare_post } from "../controllers/share.controller";
-import { validate_token } from "../middlewares/validate-token.middleware";
+import { validate_token } from "../middlewares/token.middleware";
 
 const share_router = Router();
 

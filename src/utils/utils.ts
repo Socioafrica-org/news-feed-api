@@ -403,6 +403,24 @@ export const retrieve_user_followers = async (
 };
 
 /**
+ * * Function responsible for checking if a user is followed by anpther
+ * @param follower The id of the follower
+ * @param followee The id of the user who is being followed
+ * @returns true if the user is following the other
+ */
+export const check_user_following = async (
+  user_id: Types.ObjectId | string,
+  followee: Types.ObjectId | string
+): Promise<boolean> => {
+  const is_following = await follower_model.findOne({
+    user: user_id,
+    following: followee,
+  });
+
+  return is_following ? true : false;
+};
+
+/**
  * * Function responsible for retrieving the list/total count of users followed by a particular user
  * @param user_id The id of the user to retrieve the followees
  * @param config Contans options e.g. `detailed` which indicates if the function should retrieve the list of followees with their user profile, and `pagination` the set of followes to be retrieved
