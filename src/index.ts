@@ -5,13 +5,13 @@ import bodyParser from "body-parser";
 import connect_mongodb from "./utils/db.config";
 import cookieParser from "cookie-parser";
 import topic_router from "./routes/topic.route";
-import { TExtendedRequestTokenData } from "./utils/types";
 import post_router from "./routes/post.route";
 import comment_router from "./routes/comment.route";
 import reaction_router from "./routes/reaction.route";
 import bookmark_router from "./routes/bookmark.route";
 import share_router from "./routes/share.route";
 import user_router from "./routes/user.route";
+import community_router from "./routes/community.route";
 
 // * Load the environmental variables from the .env file to the process.ENV object
 config();
@@ -68,6 +68,8 @@ app.use("/bookmarks", bookmark_router);
 app.use("/share", share_router);
 // * Handles all requests to the /user endpoint
 app.use("/user", user_router);
+// * Handles all requests to the /community endpoint
+app.use("/community", community_router);
 
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
   const time = new Date(Date.now()).toString();
