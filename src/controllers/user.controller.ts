@@ -337,10 +337,10 @@ export const get_user = async (
     const posts_count = (await retrieve_user_posts(user._id)) as number;
 
     // * Check if the user who made ths request (the signed in user) follows the user with this profile
-    const is_following = await check_user_following(
-      token_data.user_id,
-      user._id
-    );
+    const is_following =
+      token_data?.user_id &&
+      (await check_user_following(token_data?.user_id, user._id)) &&
+      undefined;
 
     // * Assign all the above variables to the response object
     const parsed_user: TUserDetailResponse = {
