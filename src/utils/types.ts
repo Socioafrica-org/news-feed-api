@@ -139,7 +139,7 @@ export type TUserDetailResponse = TUserModelMetaData & {
   followees_count: number;
   communities_count: number;
   posts_count: number;
-  is_following: boolean;
+  is_following: boolean | undefined;
 };
 
 export type TFollowerResponse = Omit<TFollowerModel, "user"> & {

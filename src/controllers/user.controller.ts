@@ -338,8 +338,8 @@ export const get_user = async (
 
     // * Check if the user who made ths request (the signed in user) follows the user with this profile
     const is_following =
-      token_data?.user_id &&
-      (await check_user_following(token_data?.user_id, user._id)) &&
+      token_data?.user_id ?
+      (await check_user_following(token_data?.user_id, user._id)) :
       undefined;
 
     // * Assign all the above variables to the response object

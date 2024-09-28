@@ -83,3 +83,41 @@ export const get_communities = async (
     return res.status(500).json("Internal server error");
   }
 };
+
+export const join_community = async (
+  req: Request<any, any, { community_id: string }> & TExtendedRequestTokenData,
+  res: Response
+) => {
+  try {
+    const {
+      token_data: { user_id },
+      body: { community_id },
+    } = req;
+
+    // * Check if this user has previously joined the community
+    const is_member = await community_member_model.findOne({
+      user: user_id,
+      community: community_id,
+    });
+
+    // * If the user is already a member, return 500 error
+    if (is_member) {
+      console.error("This user is already a member of this community");
+      return res
+        .status(500)
+        .json("This user is already a member of this community");
+    }
+
+    // * Add this user as a member (member) of this community
+    await community_member_model.create({
+      user: user_id,
+      community: community_id,
+      role: "member",
+    });
+
+    return res.status(201).json("Community created successfully");
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json("Internal server error");
+  }
+};
