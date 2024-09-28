@@ -6,7 +6,7 @@ export type TTopicModel = {
 };
 
 type TReactions = "like" | "dislike";
-type TVisibilityModes = "all" | "community" | "private";
+export type TVisibilityModes = "all" | "community" | "private";
 type TCommunityVisibilityModes = "all" | "manual";
 type TCommunityMemberRoles = "super_admin" | "admin" | "member";
 

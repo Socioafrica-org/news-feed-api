@@ -1,4 +1,4 @@
-import { model, Schema } from "mongoose";
+import { model, Schema, Types } from "mongoose";
 import { TPostModel } from "../utils/types";
 
 const post: Schema<TPostModel> = new Schema({
@@ -14,7 +14,7 @@ const post: Schema<TPostModel> = new Schema({
           values: ["all", "community", "private"],
         },
       },
-      community_id: String,
+      community_id: Types.ObjectId,
     },
   },
   topic: { type: String },

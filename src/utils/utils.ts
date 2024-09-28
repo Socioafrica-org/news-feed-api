@@ -10,6 +10,7 @@ import {
   TUserModel,
   TUserModelMetaData,
   TCommunityMemberModel,
+  TCommunityModel,
 } from "./types";
 import CommentModel from "../models/Comment.model";
 import bookmark_model from "../models/Bookmark.model";
@@ -476,7 +477,7 @@ export const retrieve_user_followees = async (
 export const retrieve_user_communities = async (
   user_id: Types.ObjectId,
   config?: { detailed: true; pagination: number }
-): Promise<TCommunityMemberModel[] | number> => {
+): Promise<TCommunityModel[] | number> => {
   if (!config?.detailed) {
     // * Retrieve the total count of users communities this user is a member of
     const communities_count = await community_member_model
@@ -496,7 +497,7 @@ export const retrieve_user_communities = async (
     .skip(amount_to_skip)
     .limit(limit);
 
-  return communities;
+  return communities.map(community => community.community as any as TCommunityModel);
 };
 
 /**

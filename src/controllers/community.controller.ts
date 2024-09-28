@@ -2,7 +2,16 @@ import { Request, Response } from "express";
 import community_model from "../models/Community.model";
 import { TExtendedRequestTokenData } from "../utils/types";
 import community_member_model from "../models/CommunityMember.model";
+import PostModel from "../models/Post.model";
+import { parse_posts } from "../utils/utils";
+import { Types } from "mongoose";
 
+/**
+ * * Function responsible for creating a new community and adding its creator as the community super admin
+ * @param req The Express Js request object
+ * @param res The Express Js response object
+ * @returns Void
+ */
 export const create_community = async (
   req: Request<
     any,
@@ -55,6 +64,12 @@ export const create_community = async (
   }
 };
 
+/**
+ * * Function responsible for retrieving the list of communities on the platform
+ * @param req The Express Js request object
+ * @param res The Express Js response object
+ * @returns Void
+ */
 export const get_communities = async (
   req: Request<any, any, { pagination: number; topics: string[] }>,
   res: Response
@@ -84,6 +99,12 @@ export const get_communities = async (
   }
 };
 
+/**
+ * * Function responsible for adding a user to a community
+ * @param req The Express Js request object
+ * @param res The Express Js response object
+ * @returns Void
+ */
 export const join_community = async (
   req: Request<any, any, { community_id: string }> & TExtendedRequestTokenData,
   res: Response
@@ -102,10 +123,23 @@ export const join_community = async (
 
     // * If the user is already a member, return 500 error
     if (is_member) {
-      console.error("This user is already a member of this community");
-      return res
-        .status(500)
-        .json("This user is already a member of this community");
+      // * If this user if the creator of this community, return 500
+      if (is_member.role === "super_admin") {
+        console.error(
+          "This user is the creator of this community, it cannot leave"
+        );
+        return res
+          .status(500)
+          .json("This user is the creator of this community, it cannot leave");
+      }
+
+      // * Remove this user from the list of this community members
+      await community_member_model.deleteOne({
+        user: user_id,
+        community: community_id,
+      });
+
+      return res.status(200).json("User left community successfully");
     }
 
     // * Add this user as a member (member) of this community
@@ -115,7 +149,51 @@ export const join_community = async (
       role: "member",
     });
 
-    return res.status(201).json("Community created successfully");
+    return res.status(201).json("User joined community successfully");
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json("Internal server error");
+  }
+};
+
+/**
+ * * Function responsible for retrieving the list of posts created in a community
+ * @param req The Express Js request object
+ * @param res The Express Js response object
+ * @returns Void
+ */
+export const get_community_posts = async (
+  req: Request<{ community_id: string }, any, any, { pagination: number }> &
+    TExtendedRequestTokenData,
+  res: Response
+) => {
+  try {
+    const {
+      params: { community_id },
+      query: { pagination },
+      token_data: { user_id },
+    } = req;
+
+    const limit = 10;
+    const amount_to_skip = (pagination - 1) * limit;
+
+    // * Retrieve the posts created within with the community
+    const community_posts = await PostModel.find({
+      "visibility.mode": "community",
+      "visibility.community_id": new Types.ObjectId(community_id),
+    })
+      .populate("user")
+      .sort({ date_created: -1 })
+      .skip(amount_to_skip)
+      .limit(limit);
+
+    if (community_posts.length < 1)
+      return res.status(404).json("No posts found");
+
+    // * Parse each post in the list, return their reaction count, comment count, bookmarked state, total no. of times shared, etc...
+    const parsed_posts = await parse_posts(community_posts, user_id);
+
+    return res.status(200).json(parsed_posts);
   } catch (error) {
     console.error(error);
     return res.status(500).json("Internal server error");

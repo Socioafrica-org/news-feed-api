@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import {
   TCommentResponse,
   TCommunityMemberModel,
+  TCommunityModel,
   TExtendedRequestTokenData,
   TFolloweeResponse,
   TFollowerResponse,
@@ -558,7 +559,7 @@ export const get_user_followees = async (
  */
 export const get_user_communities = async (
   req: Request<{ username: string }, any, any, { pagination: number }>,
-  res: Response<TCommunityMemberModel[] | string>
+  res: Response<TCommunityModel[] | string>
 ) => {
   try {
     const {
@@ -579,7 +580,7 @@ export const get_user_communities = async (
     const communities = (await retrieve_user_communities(user._id, {
       detailed: true,
       pagination,
-    })) as TCommunityMemberModel[];
+    })) as TCommunityModel[];
 
     return res.status(200).json(communities);
   } catch (error) {

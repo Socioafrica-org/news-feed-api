@@ -5,6 +5,7 @@ import {
   TCreatePostRequestBody,
   TExtendedRequestTokenData,
   TFetchPostRequestBody,
+  TVisibilityModes,
 } from "../utils/types";
 import {
   parse_posts,
@@ -13,6 +14,7 @@ import {
 } from "../utils/utils";
 import PostModel from "../models/Post.model";
 import CommentModel from "../models/Comment.model";
+import community_member_model from "../models/CommunityMember.model";
 
 /**
  * * Function responsible for creating a post
@@ -28,6 +30,36 @@ export const create_post = async (
     const { visibility, content } = req.body;
     const files = (req.files as Express.Multer.File[]) || [];
     const uploaded_files_urls: string[] = [];
+    // * If the request content type header is in multipart/formdata instead of application/json format,
+    // * convert the string values of the visibility parameter to objects
+    const post_visibility =
+      typeof visibility === "string"
+        ? (JSON.parse(visibility) as {
+            type: TVisibilityModes;
+            community_id: string;
+          })
+        : visibility;
+
+    // * If the user intends to post in a community
+    if (post_visibility.type === "community") {
+      // * Check if the user is a member of the community he/she intends to post in
+      const is_member = await community_member_model.findOne({
+        user: user_id,
+        community: post_visibility.community_id,
+      });
+
+      // * If the user isn't a member of the community, return a 500 error
+      if (!is_member) {
+        console.error(
+          "Could not create post because user is not a member of this community, join the community to create a post in it"
+        );
+        return res
+          .status(500)
+          .json(
+            "Could not create post because user is not a member of this community, join the community to create a post in it"
+          );
+      }
+    }
 
     // * Loop though all the uploaded files, and upload each to Cloudinary
     for (const file of files) {
@@ -43,11 +75,6 @@ export const create_post = async (
       // * Add the uploaded file to the list of uploaded files
       uploaded_files_urls.push(uploaded_file.url);
     }
-
-    // * If the request content type header is in multipart/formdata instead of application/json format,
-    // * convert the string values of the visibility parameter to objects
-    const post_visibility =
-      typeof visibility === "string" ? JSON.parse(visibility) : visibility;
 
     // * Create a new post object in the post collection
     const created_post = await PostModel.create({
