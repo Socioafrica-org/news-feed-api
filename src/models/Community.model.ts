@@ -5,6 +5,12 @@ const community_schema: Schema<TCommunityModel> = new Schema<TCommunityModel>({
   name: { required: true, type: String },
   description: { required: true, type: String },
   topics: [String],
+  image: {
+    type: String,
+  },
+  cover_image: {
+    type: String,
+  },
   visibility: { required: true, type: String, enum: ["all", "manual"] },
 });
 

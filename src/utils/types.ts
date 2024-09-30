@@ -124,6 +124,8 @@ export type TCommunityModel = {
   name: string;
   description: string;
   topics: string[];
+  image: string;
+  cover_image: string;
   visibility: TCommunityVisibilityModes;
 };
 
@@ -148,4 +150,9 @@ export type TFollowerResponse = Omit<TFollowerModel, "user"> & {
 
 export type TFolloweeResponse = Omit<TFollowerModel, "following"> & {
   following: TUserModelMetaData;
+};
+
+export type TCommunityResponse = TCommunityModel & {
+  is_member: boolean;
+  members_count: number;
 };
