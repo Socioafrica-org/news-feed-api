@@ -154,5 +154,6 @@ export type TFolloweeResponse = Omit<TFollowerModel, "following"> & {
 
 export type TCommunityResponse = TCommunityModel & {
   is_member: boolean;
+  is_admin: boolean;
   members_count: number;
 };

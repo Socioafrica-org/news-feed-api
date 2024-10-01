@@ -380,6 +380,10 @@ export const get_community = async (
       cover_image: null,
       ...(community as any)._doc,
       is_member: is_member ? true : false,
+      is_admin:
+        is_member?.role === "super_admin" || is_member?.role === "admin"
+          ? true
+          : false,
       members_count,
     };
 
