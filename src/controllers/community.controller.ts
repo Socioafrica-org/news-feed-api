@@ -178,9 +178,9 @@ export const edit_community = async (
     const update_image = image_url ? { image: image_url } : {};
 
     // * Parse the topics array in the body if it was passed and the content type is of 'multipart/formdata'
-    if (typeof body.topics === 'string') {
+    if (typeof body.topics === "string") {
       const topic_string = body.topics;
-      body.topics = JSON.parse(topic_string)
+      body.topics = JSON.parse(topic_string);
     }
 
     // * Update the community details
@@ -376,6 +376,8 @@ export const get_community = async (
     });
 
     const response_body: TCommunityResponse = {
+      image: null,
+      cover_image: null,
       ...(community as any)._doc,
       is_member: is_member ? true : false,
       members_count,
