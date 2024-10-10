@@ -9,8 +9,8 @@ import {
   TCommentModel,
   TUserModel,
   TUserModelMetaData,
-  TCommunityMemberModel,
   TCommunityModel,
+  TNotificationModel,
 } from "./types";
 import CommentModel from "../models/Comment.model";
 import bookmark_model from "../models/Bookmark.model";
@@ -18,6 +18,205 @@ import PostModel from "../models/Post.model";
 import UserModel from "../models/User.model";
 import follower_model from "../models/Follower.model";
 import community_member_model from "../models/CommunityMember.model";
+import notification_model from "../models/Notification.model";
+import Queue from "bull";
+import community_model from "../models/Community.model";
+
+/**
+ * * The post notification queue for handling the background processes for sending out notifications concerning newly uploaded posts
+ * */
+export const post_notification_queue = new Queue<{
+  community_id?: Types.ObjectId | string;
+  initiated_by: Types.ObjectId | string;
+  post: { _id: Types.ObjectId | string; content: string };
+}>("post-notification-queue");
+
+/**
+ * * The comment notification queue for handling the background processes for sending out notifications concerning newly uploaded comments/replies
+ * */
+export const comment_notification_queue = new Queue<{
+  initiated_by: Types.ObjectId | string;
+  post_id: Types.ObjectId | string;
+  parent_comment_id?: Types.ObjectId | string;
+  reply_to?: Types.ObjectId | string;
+  comment: { _id: Types.ObjectId | string; content: string };
+}>("comment-notification-queue");
+
+/**
+ * * The reaction notification queue for handling the background processes for sending out notifications concerning a reactions to posts/comments
+ * */
+export const reaction_notification_queue = new Queue<{
+  initiated_by: Types.ObjectId | string;
+  post_id?: Types.ObjectId | string;
+  comment_id?: Types.ObjectId | string;
+}>("reaction-notification-queue");
+
+/**
+ * * The follow notification queue for handling the background processes for sending out notifications concerning when a user get's followed
+ * */
+export const follow_notification_queue = new Queue<{
+  initiated_by: Types.ObjectId | string;
+  user: Types.ObjectId | string;
+}>("follow-notification-queue");
+
+// * Processes each task added to the post notification queue
+post_notification_queue.process(async ({ data }) => {
+  try {
+    // * Retrieve the details of the user responsible for making this request, i.e. creating this post
+    const current_user = await get_current_user(data.initiated_by);
+
+    // * If the post was uploaded to a community, get the list of all the community menbers
+    if (data.community_id) {
+      // * Retrieve the details of the community this post was uploaded to
+      const community_details = await community_model.findById(
+        data.community_id
+      );
+
+      // * Retrieve all members of the community the post was uploaded to
+      const community_members = await community_member_model.find({
+        community: community_details?._id,
+      });
+
+      // * Loop through all the community members
+      for (const member of community_members) {
+        // * Send a notification to each member of the community concerning the new post
+        await create_notification({
+          user: member.user?.toString(),
+          initiated_by: current_user._id?.toString(),
+          content: `${current_user.metadata.first_name} shared a new post in ${
+            community_details?.name
+          } community: "${
+            data.post.content.length > 200
+              ? `${data.post.content.slice(0, 200)}...`
+              : data.post.content
+          }"`,
+          ref: {
+            mode: "post",
+            ref_id: data.post._id as Types.ObjectId,
+          },
+        });
+      }
+
+      return;
+    }
+
+    // * Else if the post was not uploaded to a community, but to the platform, get a list of the post's creator followers
+    // * Retrieve all followers of the creator of the post
+    const user_followers = await follower_model.find({
+      following: current_user._id,
+    });
+
+    // * Loop through all the user followers
+    for (const follower of user_followers) {
+      // * Send a notification to each of the user followers concerning the new post
+      await create_notification({
+        user: follower.user?.toString(),
+        initiated_by: current_user?._id.toString(),
+        content: `${current_user.metadata.first_name} shared a new post: "${
+          data.post.content.length > 200
+            ? `${data.post.content.slice(0, 200)}...`
+            : data.post.content
+        }"`,
+        ref: {
+          mode: "post",
+          ref_id: data.post._id as Types.ObjectId,
+        },
+      });
+    }
+  } catch (error) {
+    console.error(
+      "An error occured while running post notification background process",
+      error
+    );
+  }
+});
+
+// * Processes each task added to the comment notification queue
+comment_notification_queue.process(async ({ data }) => {
+  try {
+    // * Retrieve the user who sent this request, i.e. the user to who is commenting on this post/replying to this comment
+    const current_user = await get_current_user(data.initiated_by);
+    const post = await PostModel.findById(data.post_id);
+    const parent_comment = data.parent_comment_id
+      ? await CommentModel.findById(data.parent_comment_id)
+      : undefined;
+    const comment_content =
+      data.comment.content.length > 200
+        ? `${data.comment.content.slice(0, 200)}...`
+        : data.comment.content;
+
+    // * If the current action is NOT a reply to a comment, but a comment to the post, and the user who created the post commented on his/her own post, don't bother sending a notification
+    if (
+      !parent_comment &&
+      post?.user?.toString() === current_user._id?.toString()
+    )
+      return console.error(
+        "Cannot notify user when he/she comments on his/her own post"
+      );
+
+    // * If the current action is a reply to a comment, and the user who created the comment is replying his/her own comment, don't bother sending a notification
+    if (
+      parent_comment &&
+      parent_comment?.user?.toString() === current_user._id?.toString()
+    )
+      return console.error(
+        "Cannot notify user when he/she replies to his/her own comment"
+      );
+
+    // * If user is replying to a comment (which was a reply to another comment) in a post, send a notification to the user who created the comment that is being replied to
+    if (data.reply_to) {
+      // * Notify the user who created the comment (reply) which was replied to
+      await create_notification({
+        user: data.reply_to.toString(),
+        initiated_by: current_user?._id?.toString(),
+        content: `${current_user?.metadata?.first_name} replied to your comment: "${comment_content}"`,
+        ref: {
+          mode: "comment",
+          ref_id: data.comment._id as Types.ObjectId,
+          post_id: post?._id,
+        },
+      });
+    }
+
+    // * If user is replying to a comment in a post, send a notification to the user who created the comment that is being replied to
+    if (parent_comment) {
+      // * Notify the user who created the comment which was replied to
+      await create_notification({
+        user: parent_comment?.user?.toString(),
+        initiated_by: current_user?._id?.toString(),
+        content: `${current_user?.metadata?.first_name} replied to your comment: "${comment_content}"`,
+        ref: {
+          mode: "comment",
+          ref_id: data.comment._id as Types.ObjectId,
+          post_id: post?._id,
+        },
+      });
+    }
+
+    // * Notify the user who created the post which was commented on
+    await create_notification({
+      user: post?.user?.toString() || "",
+      initiated_by: current_user?._id?.toString(),
+      content: `${current_user?.metadata?.first_name} commented on your post: ${comment_content}`,
+      ref: {
+        mode: "comment",
+        ref_id: data.comment._id as Types.ObjectId,
+        post_id: post?._id,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "An error occured while running comment notification background process",
+      error
+    );
+  }
+});
+
+// * Processes each task added to the reaction notification queue
+reaction_notification_queue.process(async ({ data }) => {});
+
+// * Processes each task added to the follow notification queue
+follow_notification_queue.process(async ({ data }) => {});
 
 /**
  * * Uploads a file to cloudinary object storage
@@ -234,6 +433,8 @@ export const parse_single_post = async (
     ...(post_details_to_be_parsed as any)._doc,
     parent_post_id: post.parent_post_id,
     shared_by: post.shared_by,
+    is_shared: post.parent_post_id && post.shared_by ? true : false,
+    _id: post._id,
     user,
     reactions: {
       like: {
@@ -497,7 +698,9 @@ export const retrieve_user_communities = async (
     .skip(amount_to_skip)
     .limit(limit);
 
-  return communities.map(community => community.community as any as TCommunityModel);
+  return communities.map(
+    (community) => community.community as any as TCommunityModel
+  );
 };
 
 /**
@@ -722,4 +925,39 @@ export const retrieve_user_saved_comments = async (
   }
 
   return parsed_saved_comments;
+};
+
+/**
+ * * Function responsible for ceating a new notification in the database
+ * @param config the notification details
+ */
+export const create_notification = async (
+  config: Omit<TNotificationModel, "initiated_by" | "user" | "read"> & {
+    initiated_by: string;
+    user: string;
+  }
+) => {
+  // * Create a new notification in the database
+  const created_notification = await notification_model
+    .create({ ...config, read: false })
+    .catch((e) => console.error("Could not create notification due to", e));
+
+  if (created_notification) {
+    // * Execute the function to send notification to the client
+  }
+};
+
+/**
+ * * Function responsible for retriving the details of a user, this is usually the signed in user
+ * @param user_id The ID of the user with the access token
+ * @returns The user details of a user id
+ */
+export const get_current_user = async (user_id: Types.ObjectId | string) => {
+  // * Retrieve the user who sent this request, i.e. the user who made this comment
+  const current_user = await UserModel.findById(user_id);
+
+  // * If the user who initiated this request was not found, i.e. wrong user id in access token, return 404 error
+  if (!current_user) throw new Error(`User with this id ${user_id} not found`);
+
+  return current_user;
 };
