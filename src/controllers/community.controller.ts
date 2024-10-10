@@ -234,7 +234,23 @@ export const get_communities = async (
       .skip(amount_to_skip)
       .limit(limit);
 
-    return res.status(200).json(communities);
+    const parsed_communities: TCommunityResponse[] = [];
+
+    // * Loop through each community in the list of retrieved communities, and add the no. of members in each community
+    for (const community of communities) {
+      // * Retrieve the no. of members in this community
+      const members_count = await community_member_model.countDocuments({
+        community: community._id,
+      });
+      const parsed_community: TCommunityResponse = {
+        ...(community as any)._doc,
+        members_count,
+      };
+      // * Add the parsed community to the list of parsed communities
+      parsed_communities.push(parsed_community);
+    }
+
+    return res.status(200).json(parsed_communities);
   } catch (error) {
     console.error(error);
     return res.status(500).json("Internal server error");
@@ -371,7 +387,6 @@ export const get_community = async (
 
     // * Retrieve the count of the members of this community
     const members_count = await community_member_model.countDocuments({
-      user: user_id,
       community: community_id,
     });
 

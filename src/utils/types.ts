@@ -1,4 +1,4 @@
-import { Schema } from "mongoose";
+import { Schema, Types } from "mongoose";
 
 export type TTopicModel = {
   topic_ref: string;
@@ -23,23 +23,23 @@ type TReactionsCount = {
 
 export type TPostModel = {
   visibility: { mode: TVisibilityModes; community_id: string };
-  user: Schema.Types.ObjectId;
+  user: Types.ObjectId;
   content: string;
   file_urls: string[];
   topic: string;
   shares: string[];
   date_created: Date | string | number;
   reactions: TPostReaction[];
-  parent_post_id?: Schema.Types.ObjectId;
+  parent_post_id?: Types.ObjectId;
   shared_by?: string;
 };
 
 export type TCommentModel = {
-  user: Schema.Types.ObjectId;
+  user: Types.ObjectId;
   content: string;
-  parent_comment_id: Schema.Types.ObjectId;
-  reply_to: string;
-  post_id: Schema.Types.ObjectId;
+  parent_comment_id: Types.ObjectId;
+  reply_to: Types.ObjectId;
+  post_id: Types.ObjectId;
   reactions: TCommentReaction[];
   date_created: Date | string | number;
 };
@@ -51,18 +51,23 @@ export type TCommentResponse = Omit<TCommentModel, "reactions"> & {
 };
 
 export type TPostReaction = {
-  user: Schema.Types.ObjectId;
+  user: Types.ObjectId;
   reaction: TReactions;
-  post_id: Schema.Types.ObjectId;
+  post_id: Types.ObjectId;
 };
 
 export type TCommentReaction = {
-  user: Schema.Types.ObjectId;
+  user: Types.ObjectId;
   reaction: TReactions;
 };
 
+export type TPostVisibilityObject = {
+  mode: TVisibilityModes;
+  community_id: string;
+};
+
 export type TCreatePostRequestBody = {
-  visibility: { type: TVisibilityModes; community_id: string };
+  visibility: TPostVisibilityObject;
   content: string;
   topic: string;
   images: File[];
@@ -83,6 +88,7 @@ export type TReactionRequestBody = {
 };
 
 export type TPostResponse = Omit<TPostModel, "reactions" | "shares"> & {
+  is_shared_post: boolean;
   reactions: TReactionsCount;
   comments_count?: number;
   comments?: TCommentModel[];
@@ -91,9 +97,9 @@ export type TPostResponse = Omit<TPostModel, "reactions" | "shares"> & {
 };
 
 export type TBookmarkModel = {
-  user: { required: true; type: Schema.Types.ObjectId; ref: "User" };
-  post_id: Schema.Types.ObjectId;
-  comment_id: Schema.Types.ObjectId;
+  user: { required: true; type: Types.ObjectId; ref: "User" };
+  post_id: Types.ObjectId;
+  comment_id: Types.ObjectId;
 };
 
 export type TUserModel = {
@@ -116,8 +122,8 @@ export type TUserModelMetaData = {
 };
 
 export type TFollowerModel = {
-  user: Schema.Types.ObjectId;
-  following: Schema.Types.ObjectId;
+  user: Types.ObjectId;
+  following: Types.ObjectId;
 };
 
 export type TCommunityModel = {
@@ -130,8 +136,8 @@ export type TCommunityModel = {
 };
 
 export type TCommunityMemberModel = {
-  user: Schema.Types.ObjectId;
-  community: Schema.Types.ObjectId;
+  user: Types.ObjectId;
+  community: Types.ObjectId;
   role: TCommunityMemberRoles;
 };
 
@@ -157,3 +163,40 @@ export type TCommunityResponse = TCommunityModel & {
   is_admin: boolean;
   members_count: number;
 };
+
+export type TNotificationModel = {
+  user: Types.ObjectId;
+  initiated_by: Types.ObjectId;
+  content: string;
+  read: boolean;
+  ref: {
+    mode: "post" | "comment" | "react" | "follow";
+    ref_id: Types.ObjectId;
+    post_id?: Types.ObjectId;
+  };
+};
+
+export type TPostNotificationJobData = {
+  community_id?: Types.ObjectId | string;
+  initiated_by: Types.ObjectId | string;
+  post: { _id: Types.ObjectId | string; content: string };
+};
+
+export type TCommentNotificationJobData = {
+  initiated_by: Types.ObjectId | string;
+  post_id: Types.ObjectId | string;
+  parent_comment_id?: Types.ObjectId | string;
+  reply_to?: Types.ObjectId | string;
+  comment: { _id: Types.ObjectId | string; content: string };
+}
+
+export type TReactionNotificationJobData = {
+  initiated_by: Types.ObjectId | string;
+  post_id?: Types.ObjectId | string;
+  comment_id?: Types.ObjectId | string;
+}
+
+export type TFollowNotificationJobData = {
+  initiated_by: Types.ObjectId | string;
+  user: Types.ObjectId | string;
+}

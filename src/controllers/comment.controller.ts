@@ -6,7 +6,10 @@ import {
 } from "../utils/types";
 import CommentModel from "../models/Comment.model";
 import PostModel from "../models/Post.model";
-import { parse_comment } from "../utils/utils";
+import {
+  parse_comment,
+  send_comment_notification,
+} from "../utils/utils";
 
 /**
  * * Function responsible for creating a new comment in a post, i.e. adding a new comment to a post
@@ -44,7 +47,20 @@ export const create_comment = async (
       return res.status(500).json("Could not create comment");
     }
 
-    return res.status(201).json("Comment created successfully");
+    res.status(201).json("Comment created successfully");
+
+    // * Send comment notification to this user
+    send_comment_notification({
+      initiated_by: user_id,
+      post_id: post._id,
+      comment: { _id: created_comment._id, content: created_comment.content },
+      ...(created_comment.parent_comment_id
+        ? { parent_comment_id: created_comment.parent_comment_id }
+        : {}),
+      ...(created_comment.reply_to
+        ? { reply_to: created_comment.reply_to }
+        : {}),
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json("Internal server error");

@@ -1,19 +1,19 @@
 import { Request, Response } from "express";
 import {
   TPostResponse,
-  TCommentResponse,
   TCreatePostRequestBody,
   TExtendedRequestTokenData,
   TFetchPostRequestBody,
-  TVisibilityModes,
+  TPostVisibilityObject,
 } from "../utils/types";
 import {
   parse_posts,
   parse_single_post,
+  send_post_notification,
+  // post_notification_queue,
   upload_file_to_cloudinary,
 } from "../utils/utils";
 import PostModel from "../models/Post.model";
-import CommentModel from "../models/Comment.model";
 import community_member_model from "../models/CommunityMember.model";
 
 /**
@@ -34,14 +34,11 @@ export const create_post = async (
     // * convert the string values of the visibility parameter to objects
     const post_visibility =
       typeof visibility === "string"
-        ? (JSON.parse(visibility) as {
-            type: TVisibilityModes;
-            community_id: string;
-          })
+        ? (JSON.parse(visibility) as TPostVisibilityObject)
         : visibility;
 
     // * If the user intends to post in a community
-    if (post_visibility.type === "community") {
+    if (post_visibility.mode === "community") {
       // * Check if the user is a member of the community he/she intends to post in
       const is_member = await community_member_model.findOne({
         user: user_id,
@@ -94,7 +91,20 @@ export const create_post = async (
       return res.status(500).json("Could not add the post to the collection");
     }
 
-    return res.status(201).json("Post created successfully");
+    // * Send a success response to the client
+    res.status(201).json("Post created successfully");
+
+    // * Send post notification to this user's followers/to the community members
+    send_post_notification({
+      initiated_by: user_id,
+      post: {
+        _id: created_post._id,
+        content: created_post.content,
+      },
+      ...(post_visibility.mode === "community"
+        ? { community_id: post_visibility.community_id }
+        : {}),
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json("Internal server error");

@@ -1,11 +1,8 @@
 import { Request, Response } from "express";
 import {
   TCommentResponse,
-  TCommunityMemberModel,
   TCommunityModel,
   TExtendedRequestTokenData,
-  TFolloweeResponse,
-  TFollowerResponse,
   TPostResponse,
   TUserDetailResponse,
   TUserModelMetaData,
@@ -14,6 +11,7 @@ import UserModel from "../models/User.model";
 import { compare, hash } from "bcrypt";
 import {
   check_user_following,
+  send_follow_notification,
   retrieve_user_communities,
   retrieve_user_disliked_posts,
   retrieve_user_followees,
@@ -338,10 +336,9 @@ export const get_user = async (
     const posts_count = (await retrieve_user_posts(user._id)) as number;
 
     // * Check if the user who made ths request (the signed in user) follows the user with this profile
-    const is_following =
-      token_data?.user_id ?
-      (await check_user_following(token_data?.user_id, user._id)) :
-      undefined;
+    const is_following = token_data?.user_id
+      ? await check_user_following(token_data?.user_id, user._id)
+      : undefined;
 
     // * Assign all the above variables to the response object
     const parsed_user: TUserDetailResponse = {
@@ -647,9 +644,16 @@ export const follow_unfollow_user = async (
       following: user_to_follow._id,
     });
 
-    return res
+    // * Return a response message to the user/client before sending out notifications
+    res
       .status(200)
       .json(`User successfully added to the list of ${username} followers`);
+
+    // * Send a notification to the user who was followed
+    send_follow_notification({
+      initiated_by: user_id,
+      user: user_to_follow._id,
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json("Internal server error");
