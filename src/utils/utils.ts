@@ -1002,7 +1002,6 @@ export const create_notification = async (
 
   if (created_notification) {
     // * Execute the function to send notification to the client
-    console.log("ADDED TO notification collecttion!");
   }
 };
 
