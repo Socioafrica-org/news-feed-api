@@ -34,3 +34,58 @@ export const get_notifications = async (
     return res.status(500).json("Internal server error");
   }
 };
+
+/**
+ * * Function responsible for changing the state of all notifications pertaining to a user to read
+ * @param req The Express Js request object
+ * @param res The Express Js response object
+ * @returns Void
+ */
+export const read_all_notifications = async (
+  req: Request & TExtendedRequestTokenData,
+  res: Response
+) => {
+  try {
+    const {
+      token_data: { user_id },
+    } = req;
+
+    // * Set all notifications relating to a specific user to read
+    await notification_model.updateMany(
+      { user: user_id },
+      { $set: { read: true } }
+    );
+
+    return res.status(200).json("Updated notifications succcessfully");
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json("Internal server error");
+  }
+};
+
+/**
+ * * Function responsible for changing the state of a single notification to read
+ * @param req The Express Js request object
+ * @param res The Express Js response object
+ * @returns Void
+ */
+export const read_notification = async (
+  req: Request<{ notification_id: string }> & TExtendedRequestTokenData,
+  res: Response
+) => {
+  try {
+    const {
+      params: { notification_id },
+    } = req;
+
+    // * Set the current notification to read
+    await notification_model.findByIdAndUpdate(notification_id, {
+      $set: { read: true },
+    });
+
+    return res.status(200).json("Updated notification succcessfully");
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json("Internal server error");
+  }
+};
