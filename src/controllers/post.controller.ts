@@ -9,7 +9,8 @@ import {
 import {
   parse_posts,
   parse_single_post,
-  post_notification_queue,
+  send_post_notification,
+  // post_notification_queue,
   upload_file_to_cloudinary,
 } from "../utils/utils";
 import PostModel from "../models/Post.model";
@@ -93,8 +94,8 @@ export const create_post = async (
     // * Send a success response to the client
     res.status(201).json("Post created successfully");
 
-    // * Add notification task to the post notification queue, to send post notification to this user's followers/to the community members
-    post_notification_queue.add({
+    // * Send post notification to this user's followers/to the community members
+    send_post_notification({
       initiated_by: user_id,
       post: {
         _id: created_post._id,

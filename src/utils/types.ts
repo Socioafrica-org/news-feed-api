@@ -61,7 +61,10 @@ export type TCommentReaction = {
   reaction: TReactions;
 };
 
-export type TPostVisibilityObject = { mode: TVisibilityModes; community_id: string };
+export type TPostVisibilityObject = {
+  mode: TVisibilityModes;
+  community_id: string;
+};
 
 export type TCreatePostRequestBody = {
   visibility: TPostVisibilityObject;
@@ -85,7 +88,7 @@ export type TReactionRequestBody = {
 };
 
 export type TPostResponse = Omit<TPostModel, "reactions" | "shares"> & {
-  is_shared_post: boolean,
+  is_shared_post: boolean;
   reactions: TReactionsCount;
   comments_count?: number;
   comments?: TCommentModel[];
@@ -169,6 +172,31 @@ export type TNotificationModel = {
   ref: {
     mode: "post" | "comment" | "react" | "follow";
     ref_id: Types.ObjectId;
-    post_id?: Types.ObjectId
+    post_id?: Types.ObjectId;
   };
 };
+
+export type TPostNotificationJobData = {
+  community_id?: Types.ObjectId | string;
+  initiated_by: Types.ObjectId | string;
+  post: { _id: Types.ObjectId | string; content: string };
+};
+
+export type TCommentNotificationJobData = {
+  initiated_by: Types.ObjectId | string;
+  post_id: Types.ObjectId | string;
+  parent_comment_id?: Types.ObjectId | string;
+  reply_to?: Types.ObjectId | string;
+  comment: { _id: Types.ObjectId | string; content: string };
+}
+
+export type TReactionNotificationJobData = {
+  initiated_by: Types.ObjectId | string;
+  post_id?: Types.ObjectId | string;
+  comment_id?: Types.ObjectId | string;
+}
+
+export type TFollowNotificationJobData = {
+  initiated_by: Types.ObjectId | string;
+  user: Types.ObjectId | string;
+}

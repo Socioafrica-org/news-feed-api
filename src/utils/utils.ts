@@ -11,6 +11,10 @@ import {
   TUserModelMetaData,
   TCommunityModel,
   TNotificationModel,
+  TPostNotificationJobData,
+  TCommentNotificationJobData,
+  TReactionNotificationJobData,
+  TFollowNotificationJobData,
 } from "./types";
 import CommentModel from "../models/Comment.model";
 import bookmark_model from "../models/Bookmark.model";
@@ -19,48 +23,16 @@ import UserModel from "../models/User.model";
 import follower_model from "../models/Follower.model";
 import community_member_model from "../models/CommunityMember.model";
 import notification_model from "../models/Notification.model";
-import Queue from "bull";
 import community_model from "../models/Community.model";
 
 /**
- * * The post notification queue for handling the background processes for sending out notifications concerning newly uploaded posts
- * */
-export const post_notification_queue = new Queue<{
-  community_id?: Types.ObjectId | string;
-  initiated_by: Types.ObjectId | string;
-  post: { _id: Types.ObjectId | string; content: string };
-}>("post-notification-queue");
-
-/**
- * * The comment notification queue for handling the background processes for sending out notifications concerning newly uploaded comments/replies
- * */
-export const comment_notification_queue = new Queue<{
-  initiated_by: Types.ObjectId | string;
-  post_id: Types.ObjectId | string;
-  parent_comment_id?: Types.ObjectId | string;
-  reply_to?: Types.ObjectId | string;
-  comment: { _id: Types.ObjectId | string; content: string };
-}>("comment-notification-queue");
-
-/**
- * * The reaction notification queue for handling the background processes for sending out notifications concerning a reactions to posts/comments
- * */
-export const reaction_notification_queue = new Queue<{
-  initiated_by: Types.ObjectId | string;
-  post_id?: Types.ObjectId | string;
-  comment_id?: Types.ObjectId | string;
-}>("reaction-notification-queue");
-
-/**
- * * The follow notification queue for handling the background processes for sending out notifications concerning when a user get's followed
- * */
-export const follow_notification_queue = new Queue<{
-  initiated_by: Types.ObjectId | string;
-  user: Types.ObjectId | string;
-}>("follow-notification-queue");
-
-// * Processes each task added to the post notification queue
-post_notification_queue.process(async ({ data }) => {
+ * * Function responsible for processesing each task added to the post notification queue
+ * @param job contains the Job data object
+ * @returns void
+ */
+export const send_post_notification = async (
+  data: TPostNotificationJobData
+) => {
   try {
     // * Retrieve the details of the user responsible for making this request, i.e. creating this post
     const current_user = await get_current_user(data.initiated_by);
@@ -129,10 +101,16 @@ post_notification_queue.process(async ({ data }) => {
       error
     );
   }
-});
+};
 
-// * Processes each task added to the comment notification queue
-comment_notification_queue.process(async ({ data }) => {
+/**
+ * * Function responsible for processesing each task added to the comment notification queue
+ * @param job contains the Job data object
+ * @returns void
+ */
+export const send_comment_notification = async (
+  data: TCommentNotificationJobData
+) => {
   try {
     // * Retrieve the user who sent this request, i.e. the user to who is commenting on this post/replying to this comment
     const current_user = await get_current_user(data.initiated_by);
@@ -210,10 +188,16 @@ comment_notification_queue.process(async ({ data }) => {
       error
     );
   }
-});
+};
 
-// * Processes each task added to the reaction notification queue
-reaction_notification_queue.process(async ({ data }) => {
+/**
+ * * Function responsible for processesing each task added to the reaction notification queue
+ * @param job contains the Job data object
+ * @returns void
+ */
+export const send_reaction_notification = async (
+  data: TReactionNotificationJobData
+) => {
   try {
     // * Retrieve the user who sent this request, i.e. the user to who is reacting this post/comment
     const current_user = await get_current_user(data.initiated_by);
@@ -262,10 +246,16 @@ reaction_notification_queue.process(async ({ data }) => {
       error
     );
   }
-});
+};
 
-// * Processes each task added to the follow notification queue
-follow_notification_queue.process(async ({ data }) => {
+/**
+ * * Function responsible for processesing each task added to the follow notification queue
+ * @param job contains the Job data object
+ * @returns void
+ */
+export const send_follow_notification = async (
+  data: TFollowNotificationJobData
+) => {
   try {
     // * Retrieve the user who sent this request, i.e. the user to who is following the other
     const current_user = await get_current_user(data.initiated_by);
@@ -283,7 +273,8 @@ follow_notification_queue.process(async ({ data }) => {
       error
     );
   }
-});
+};
+
 
 /**
  * * Uploads a file to cloudinary object storage
@@ -1011,6 +1002,7 @@ export const create_notification = async (
 
   if (created_notification) {
     // * Execute the function to send notification to the client
+    console.log("ADDED TO notification collecttion!");
   }
 };
 

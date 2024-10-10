@@ -1,11 +1,8 @@
 import { Request, Response } from "express";
 import {
   TCommentResponse,
-  TCommunityMemberModel,
   TCommunityModel,
   TExtendedRequestTokenData,
-  TFolloweeResponse,
-  TFollowerResponse,
   TPostResponse,
   TUserDetailResponse,
   TUserModelMetaData,
@@ -14,9 +11,7 @@ import UserModel from "../models/User.model";
 import { compare, hash } from "bcrypt";
 import {
   check_user_following,
-  create_notification,
-  follow_notification_queue,
-  get_current_user,
+  send_follow_notification,
   retrieve_user_communities,
   retrieve_user_disliked_posts,
   retrieve_user_followees,
@@ -654,8 +649,8 @@ export const follow_unfollow_user = async (
       .status(200)
       .json(`User successfully added to the list of ${username} followers`);
 
-    // * Add follow notification to the event queue to send a notification to the user who was followed
-    follow_notification_queue.add({
+    // * Send a notification to the user who was followed
+    send_follow_notification({
       initiated_by: user_id,
       user: user_to_follow._id,
     });

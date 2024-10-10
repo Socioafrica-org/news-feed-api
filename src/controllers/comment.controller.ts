@@ -7,13 +7,9 @@ import {
 import CommentModel from "../models/Comment.model";
 import PostModel from "../models/Post.model";
 import {
-  comment_notification_queue,
-  create_notification,
-  get_current_user,
   parse_comment,
+  send_comment_notification,
 } from "../utils/utils";
-import UserModel from "../models/User.model";
-import { Types } from "mongoose";
 
 /**
  * * Function responsible for creating a new comment in a post, i.e. adding a new comment to a post
@@ -53,8 +49,8 @@ export const create_comment = async (
 
     res.status(201).json("Comment created successfully");
 
-    // * Add notification task to the comment notification queue, to send comment notification to this user
-    comment_notification_queue.add({
+    // * Send comment notification to this user
+    send_comment_notification({
       initiated_by: user_id,
       post_id: post._id,
       comment: { _id: created_comment._id, content: created_comment.content },

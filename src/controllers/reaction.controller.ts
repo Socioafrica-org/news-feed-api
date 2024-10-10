@@ -7,7 +7,8 @@ import {
 } from "../utils/types";
 import PostModel from "../models/Post.model";
 import CommentModel from "../models/Comment.model";
-import { reaction_notification_queue } from "../utils/utils";
+import { send_reaction_notification } from "../utils/utils";
+// import { reaction_notification_queue } from "../utils/utils";
 
 /**
  * * Function responsible for adding or removing a reaction to a post or comment
@@ -93,7 +94,11 @@ export const add_remove_reaction = async (
       res.status(200).json("Successfully reacted to the post");
 
       // * Add reaction notification to the event queue to send a notification to the creator of this post
-      reaction_notification_queue.add({
+      // reaction_notification_queue.add({
+      //   initiated_by: user_id,
+      //   post_id: post_id,
+      // });
+      send_reaction_notification({
         initiated_by: user_id,
         post_id: post_id,
       });
@@ -170,7 +175,11 @@ export const add_remove_reaction = async (
       res.status(200).json("Successfully reacted to the comment");
 
       // * Add reaction notification to the event queue to send a notification to the creator of this comment
-      reaction_notification_queue.add({
+      // reaction_notification_queue.add({
+      //   initiated_by: user_id,
+      //   comment_id: comment_id,
+      // });
+      send_reaction_notification({
         initiated_by: user_id,
         comment_id: comment_id,
       });
