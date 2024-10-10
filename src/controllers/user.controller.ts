@@ -15,6 +15,7 @@ import { compare, hash } from "bcrypt";
 import {
   check_user_following,
   create_notification,
+  follow_notification_queue,
   get_current_user,
   retrieve_user_communities,
   retrieve_user_disliked_posts,
@@ -609,9 +610,6 @@ export const follow_unfollow_user = async (
     // * Retrieve the user with this username, i.e. the user to be followed
     const user_to_follow = await UserModel.findOne({ username });
 
-    // * Retrieve the user who sent this request, i.e. the user to who is following the other
-    const current_user = await get_current_user(user_id)
-
     // * if the user to be followed was not found, return 404 error
     if (!user_to_follow) {
       console.error(`User ${username} not found`);
@@ -651,17 +649,16 @@ export const follow_unfollow_user = async (
       following: user_to_follow._id,
     });
 
-    // * Notify the followed user that the user who made this request followed him/her
-    await create_notification({
-      user: user_to_follow._id?.toString(),
-      initiated_by: current_user?._id?.toString() || '',
-      content: `${current_user?.metadata?.first_name} ${current_user?.metadata?.first_name} started following you`,
-      ref: { mode: "follow", ref_id: current_user?._id },
-    });
-
-    return res
+    // * Return a response message to the user/client before sending out notifications
+    res
       .status(200)
       .json(`User successfully added to the list of ${username} followers`);
+
+    // * Add follow notification to the event queue to send a notification to the user who was followed
+    follow_notification_queue.add({
+      initiated_by: user_id,
+      user: user_to_follow._id,
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json("Internal server error");

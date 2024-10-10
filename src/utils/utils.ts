@@ -213,10 +213,77 @@ comment_notification_queue.process(async ({ data }) => {
 });
 
 // * Processes each task added to the reaction notification queue
-reaction_notification_queue.process(async ({ data }) => {});
+reaction_notification_queue.process(async ({ data }) => {
+  try {
+    // * Retrieve the user who sent this request, i.e. the user to who is reacting this post/comment
+    const current_user = await get_current_user(data.initiated_by);
+
+    // * If the item which was reacted to was a post
+    if (data.post_id) {
+      // * Retrieve post with specified id from the collection
+      const post = await PostModel.findById(data.post_id);
+
+      // * Notify the user who created the post which was reacted on
+      await create_notification({
+        user: post?.user?.toString() || "",
+        initiated_by: current_user?._id?.toString(),
+        content: `${current_user?.metadata?.first_name} reacted to your post`,
+        ref: {
+          mode: "react",
+          ref_id: post?._id as Types.ObjectId,
+        },
+      });
+
+      return;
+    }
+
+    // * If the item which was reacted to was a comment
+    if (data.comment_id) {
+      // * Retrieve comment with specified id from the collection
+      const comment = await CommentModel.findById(data.comment_id);
+
+      // * Notify the user who created the comment which was reacted on
+      await create_notification({
+        user: comment?.user?.toString() || "",
+        initiated_by: current_user?._id?.toString(),
+        content: `${current_user?.metadata?.first_name} reacted to your comment`,
+        ref: {
+          mode: "react",
+          ref_id: comment?._id as Types.ObjectId,
+          post_id: comment?.post_id as Types.ObjectId,
+        },
+      });
+
+      return;
+    }
+  } catch (error) {
+    console.error(
+      "An error occured while running reaction notification background process",
+      error
+    );
+  }
+});
 
 // * Processes each task added to the follow notification queue
-follow_notification_queue.process(async ({ data }) => {});
+follow_notification_queue.process(async ({ data }) => {
+  try {
+    // * Retrieve the user who sent this request, i.e. the user to who is following the other
+    const current_user = await get_current_user(data.initiated_by);
+
+    // * Notify the followed user that the user who made this request followed him/her
+    await create_notification({
+      user: data.user?.toString(),
+      initiated_by: current_user._id.toString(),
+      content: `${current_user.metadata.first_name} started following you`,
+      ref: { mode: "follow", ref_id: current_user._id },
+    });
+  } catch (error) {
+    console.error(
+      "An error occured while running the follow notification background process",
+      error
+    );
+  }
+});
 
 /**
  * * Uploads a file to cloudinary object storage

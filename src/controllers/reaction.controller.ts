@@ -7,8 +7,7 @@ import {
 } from "../utils/types";
 import PostModel from "../models/Post.model";
 import CommentModel from "../models/Comment.model";
-import { Model, Types } from "mongoose";
-import { create_notification, get_current_user } from "../utils/utils";
+import { reaction_notification_queue } from "../utils/utils";
 
 /**
  * * Function responsible for adding or removing a reaction to a post or comment
@@ -22,9 +21,6 @@ export const add_remove_reaction = async (
 ) => {
   try {
     const { user_id } = req.token_data;
-
-    // * Retrieve the user who sent this request, i.e. the user to who is reacting this post/comment
-    const current_user = await get_current_user(user_id);
 
     // * Check if the item to react to is a post or a comment
     // * If the item to react to is a post
@@ -93,18 +89,14 @@ export const add_remove_reaction = async (
         },
       });
 
-      // * Notify the user who created the post which was reacted on
-      await create_notification({
-        user: post.user?.toString(),
-        initiated_by: current_user?._id?.toString(),
-        content: `${current_user?.metadata?.first_name} ${current_user?.metadata?.first_name} reacted to your post`,
-        ref: {
-          mode: "react",
-          ref_id: post._id,
-        },
-      });
+      // * Return a response message to the user/client before sending out notifications
+      res.status(200).json("Successfully reacted to the post");
 
-      return res.status(200).json("Successfully reacted to the post");
+      // * Add reaction notification to the event queue to send a notification to the creator of this post
+      reaction_notification_queue.add({
+        initiated_by: user_id,
+        post_id: post_id,
+      });
     }
     // * If the item to react to is a comment
     if (req.body.comment_id) {
@@ -174,19 +166,14 @@ export const add_remove_reaction = async (
         },
       });
 
-      // * Notify the user who created the comment which was reacted on
-      await create_notification({
-        user: comment.user?.toString(),
-        initiated_by: current_user?._id?.toString(),
-        content: `${current_user?.metadata?.first_name} ${current_user?.metadata?.first_name} reacted to your comment`,
-        ref: {
-          mode: "react",
-          ref_id: comment._id,
-          post_id: comment.post_id as unknown as Types.ObjectId
-        },
-      });
+      // * Return a response message to the user/client before sending out notifications
+      res.status(200).json("Successfully reacted to the comment");
 
-      return res.status(200).json("Successfully reacted to the comment");
+      // * Add reaction notification to the event queue to send a notification to the creator of this comment
+      reaction_notification_queue.add({
+        initiated_by: user_id,
+        comment_id: comment_id,
+      });
     }
   } catch (error) {
     console.error(error);
