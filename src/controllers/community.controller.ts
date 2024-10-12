@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import community_model from "../models/Community.model";
-import { TCommunityResponse, TExtendedRequestTokenData } from "../utils/types";
+import {
+  TCommunityResponse,
+  TExtendedRequestTokenData,
+  TTokenData,
+} from "../utils/types";
 import community_member_model from "../models/CommunityMember.model";
 import PostModel from "../models/Post.model";
 import { parse_posts, upload_file_to_cloudinary } from "../utils/utils";
@@ -28,9 +32,9 @@ export const create_community = async (
 ) => {
   try {
     const {
-      token_data: { user_id },
       body: { name, description, visibility, topics },
     } = req;
+    const user_id = req.token_data?.user_id;
 
     // * Creates a new community in the database
     const created_community = await community_model.create({
@@ -86,10 +90,10 @@ export const edit_community = async (
 ) => {
   try {
     const {
-      token_data: { user_id },
       params: { community_id },
       body,
     } = req;
+    const user_id = req.token_data?.user_id;
 
     // * Confirming the community exists
     const community_exists = await community_model.findById(community_id);
@@ -269,9 +273,9 @@ export const join_community = async (
 ) => {
   try {
     const {
-      token_data: { user_id },
       body: { community_id },
     } = req;
+    const user_id = req.token_data?.user_id;
 
     // * Check if this user has previously joined the community
     const is_member = await community_member_model.findOne({
@@ -329,8 +333,9 @@ export const get_community_posts = async (
     const {
       params: { community_id },
       query: { pagination },
-      token_data: { user_id },
+      // token_data: { user_id },
     } = req;
+    const user_id = req.token_data?.user_id;
 
     const limit = 10;
     const amount_to_skip = (pagination - 1) * limit;
@@ -346,7 +351,7 @@ export const get_community_posts = async (
       .limit(limit);
 
     // * Parse each post in the list, return their reaction count, comment count, bookmarked state, total no. of times shared, etc...
-    const parsed_posts = await parse_posts(community_posts, user_id);
+    const parsed_posts = await parse_posts(community_posts, user_id || "");
 
     return res.status(200).json(parsed_posts);
   } catch (error) {

@@ -5,6 +5,7 @@ import {
   TExtendedRequestTokenData,
   TFetchPostRequestBody,
   TPostVisibilityObject,
+  TTokenData,
 } from "../utils/types";
 import {
   parse_posts,
@@ -26,7 +27,7 @@ export const create_post = async (
   res: Response
 ) => {
   try {
-    const { user_id } = req.token_data;
+    const { user_id } = req.token_data as TTokenData;
     const { visibility, content } = req.body;
     const files = (req.files as Express.Multer.File[]) || [];
     const uploaded_files_urls: string[] = [];
@@ -140,7 +141,7 @@ export const get_post = async (
     // * Parse the post, add parameters for the response body, e.g. the reactions, comments, bookmarked state, no. of times shared, etc...
     const post: TPostResponse | void = await parse_single_post(
       post_response,
-      user_id,
+      user_id || "",
       { comments: true }
     );
 
@@ -219,7 +220,7 @@ export const get_posts = async (
         // * Parse each post in the list, return their reaction count, comment count, bookmarked state, total no. of times shared, etc...
         const posts_not_belonging_to_topics_to_be_returned = await parse_posts(
           posts_not_belonging_to_topics,
-          user_id
+          user_id || ''
         );
 
         // * Return the posts with no topic
@@ -231,7 +232,7 @@ export const get_posts = async (
       // * Parse each post in the list, return their reaction count, comment count, bookmarked state, total no. of times shared, etc...
       const posts_belonging_to_topics_to_be_returned = await parse_posts(
         posts_belonging_to_topics,
-        user_id
+        user_id || ''
       );
 
       // * Return the posts with the specified topics
@@ -261,7 +262,7 @@ export const get_posts = async (
     if (all_posts.length < 1) return res.status(404).json("No posts available");
 
     // * Parse each post in the list, return their reaction count, comment count, bookmarked state, total no. of times shared, etc...
-    const posts_to_be_returned = await parse_posts(all_posts, user_id);
+    const posts_to_be_returned = await parse_posts(all_posts, user_id || '');
     // * Return all the posts in the collection irrespective of their topics
     return res.status(200).json(posts_to_be_returned);
   } catch (error) {

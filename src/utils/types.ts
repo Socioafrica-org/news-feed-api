@@ -76,7 +76,7 @@ export type TCreatePostRequestBody = {
 export type TTokenData = { user_id: string; username: string };
 
 export type TExtendedRequestTokenData = {
-  token_data: TTokenData;
+  token_data?: TTokenData;
 };
 
 export type TFetchPostRequestBody = { pagination: number; topics: string[] };
