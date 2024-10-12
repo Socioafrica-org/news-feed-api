@@ -7,7 +7,7 @@ export const share_unshare_post = async (
   res: Response
 ) => {
   try {
-    const { user_id } = req.token_data;
+    const user_id = req.token_data?.user_id;
 
     // * Check if the post to be shared exists in the database
     const original_post = await PostModel.findOne({

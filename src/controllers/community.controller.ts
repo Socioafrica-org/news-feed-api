@@ -351,7 +351,7 @@ export const get_community_posts = async (
       .limit(limit);
 
     // * Parse each post in the list, return their reaction count, comment count, bookmarked state, total no. of times shared, etc...
-    const parsed_posts = await parse_posts(community_posts, user_id || "");
+    const parsed_posts = await parse_posts(community_posts, user_id);
 
     return res.status(200).json(parsed_posts);
   } catch (error) {

@@ -275,7 +275,6 @@ export const send_follow_notification = async (
   }
 };
 
-
 /**
  * * Uploads a file to cloudinary object storage
  * @param file The file to be uploaded, typically a multer object
@@ -320,7 +319,7 @@ export const parse_posts = async (
     TPostModel & {
       _id: Types.ObjectId;
     })[],
-  user_id: Schema.Types.ObjectId | string
+  user_id: Schema.Types.ObjectId | string | undefined
 ) => {
   const posts_to_be_returned: TPostResponse[] = [];
 
@@ -396,7 +395,7 @@ export const parse_single_post = async (
     TPostModel & {
       _id: Types.ObjectId;
     },
-  user_id: Schema.Types.ObjectId | string,
+  user_id: Schema.Types.ObjectId | string | undefined,
   config?: {
     comments: boolean;
   }
@@ -461,12 +460,14 @@ export const parse_single_post = async (
     : undefined;
 
   // * Check if an existing bookmark of this post/comment and user_id exists in the collection
-  const existing_bookmark = await bookmark_model
-    .findOne({
-      user: user_id,
-      post_id: post_details_to_be_parsed._id,
-    })
-    .catch((e) => console.error("Error retrieving the bookmark", e));
+  const existing_bookmark = user_id
+    ? await bookmark_model
+        .findOne({
+          user: user_id,
+          post_id: post_details_to_be_parsed._id,
+        })
+        .catch((e) => console.error("Error retrieving the bookmark", e))
+    : undefined;
 
   // * If an error occured while retrieving the existing bookmark
   if (existing_bookmark === undefined) {
@@ -504,7 +505,7 @@ export const parse_single_post = async (
         liked: post_details_to_be_parsed.reactions.find(
           (each_post) =>
             each_post.reaction === "like" &&
-            each_post.user?.toString() === user_id.toString()
+            each_post.user?.toString() === user_id?.toString()
         )
           ? true
           : false,
@@ -518,7 +519,7 @@ export const parse_single_post = async (
         disliked: post_details_to_be_parsed.reactions.find(
           (each_post) =>
             each_post.reaction === "dislike" &&
-            each_post.user?.toString() === user_id.toString()
+            each_post.user?.toString() === user_id?.toString()
         )
           ? true
           : false,
@@ -529,7 +530,7 @@ export const parse_single_post = async (
       count: shares.length,
       // * Confirm if this user has previously shared this post
       shared: shares.find(
-        (share) => share.user?.toString() === user_id.toString()
+        (share) => share.user?.toString() === user_id?.toString()
       )
         ? true
         : false,
@@ -553,7 +554,7 @@ export const parse_comment = async (
     TCommentModel & {
       _id: Types.ObjectId;
     },
-  user_id: Schema.Types.ObjectId | string
+  user_id: Schema.Types.ObjectId | string | undefined
 ): Promise<TCommentResponse> => {
   // * Check if an existing bookmark of this post/comment and user_id exists in the collection
   const existing_bookmark = await bookmark_model
@@ -588,7 +589,7 @@ export const parse_comment = async (
         liked: comment.reactions.find(
           (each_comment) =>
             each_comment.reaction === "like" &&
-            each_comment.user?.toString() === user_id.toString()
+            each_comment.user?.toString() === user_id?.toString()
         )
           ? true
           : false,
@@ -602,7 +603,7 @@ export const parse_comment = async (
         disliked: comment.reactions.find(
           (each_comment) =>
             each_comment.reaction === "dislike" &&
-            each_comment.user?.toString() === user_id.toString()
+            each_comment.user?.toString() === user_id?.toString()
         )
           ? true
           : false,

@@ -21,7 +21,7 @@ export const add_remove_reaction = async (
   res: Response
 ) => {
   try {
-    const { user_id } = req.token_data;
+    const user_id = req.token_data?.user_id as string;
 
     // * Check if the item to react to is a post or a comment
     // * If the item to react to is a post

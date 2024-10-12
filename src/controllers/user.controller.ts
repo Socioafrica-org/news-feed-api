@@ -46,9 +46,9 @@ export const edit_user_personal_info = async (
 ) => {
   try {
     const {
-      token_data: { user_id },
       body,
     } = req;
+    const user_id = req.token_data?.user_id;
 
     // * Check if the user with the id in the access token, i.e. the user to be updated exists in the collection
     const user_details_to_update = await UserModel.findById(user_id);
@@ -188,9 +188,9 @@ export const edit_user_account_info = async (
 ) => {
   try {
     const {
-      token_data: { user_id },
       body,
     } = req;
+    const user_id = req.token_data?.user_id;
 
     // * Check if the user with the id in the access token, i.e. the user to be updated exists in the collection
     const user_details_to_update = await UserModel.findById(user_id);
@@ -599,8 +599,8 @@ export const follow_unfollow_user = async (
   try {
     const {
       params: { username },
-      token_data: { user_id },
     } = req;
+    const user_id = req.token_data?.user_id as string;
 
     // * Retrieve the user with this username, i.e. the user to be followed
     const user_to_follow = await UserModel.findOne({ username });

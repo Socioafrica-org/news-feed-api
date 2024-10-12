@@ -11,7 +11,6 @@ import {
   parse_posts,
   parse_single_post,
   send_post_notification,
-  // post_notification_queue,
   upload_file_to_cloudinary,
 } from "../utils/utils";
 import PostModel from "../models/Post.model";
@@ -141,7 +140,7 @@ export const get_post = async (
     // * Parse the post, add parameters for the response body, e.g. the reactions, comments, bookmarked state, no. of times shared, etc...
     const post: TPostResponse | void = await parse_single_post(
       post_response,
-      user_id || "",
+      user_id,
       { comments: true }
     );
 
@@ -262,7 +261,7 @@ export const get_posts = async (
     if (all_posts.length < 1) return res.status(404).json("No posts available");
 
     // * Parse each post in the list, return their reaction count, comment count, bookmarked state, total no. of times shared, etc...
-    const posts_to_be_returned = await parse_posts(all_posts, user_id || '');
+    const posts_to_be_returned = await parse_posts(all_posts, user_id);
     // * Return all the posts in the collection irrespective of their topics
     return res.status(200).json(posts_to_be_returned);
   } catch (error) {

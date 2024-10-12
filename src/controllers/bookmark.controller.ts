@@ -9,7 +9,7 @@ export const edit_bookmark = async (
   res: Response
 ) => {
   try {
-    const { user_id } = req.token_data;
+    const user_id = req.token_data?.user_id;
 
     // * If the item to be bookmarked is a post, check if it exists
     if (req.body.post_id) {
@@ -111,7 +111,7 @@ export const get_user_bookmarks = async (
   res: Response
 ) => {
   try {
-    const { user_id } = req.token_data;
+    const user_id = req.token_data?.user_id;
 
     // * Retrieve the list of existing bookmarks in the Topics collection
     const bookmarks = await BookmarkModel.find({ user: user_id }).catch((e) =>

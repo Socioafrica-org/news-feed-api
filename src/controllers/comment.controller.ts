@@ -151,7 +151,7 @@ export const get_comment = async (
 
     // * Loop trhough the replies list and parse each reply, adding properties such as like/dislike count
     for (const reply of replies_response) {
-      const parsed_reply = await parse_comment(reply, user_id || '');
+      const parsed_reply = await parse_comment(reply, user_id);
 
       // * Append the parsed reply to the list of parsed replies
       parsed_replies.push(parsed_reply);

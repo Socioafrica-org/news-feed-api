@@ -15,9 +15,9 @@ export const get_notifications = async (
 ) => {
   try {
     const {
-      token_data: { user_id },
       query: { pagination },
     } = req;
+    const user_id = req.token_data?.user_id;
 
     const limit = 10;
     const amount_to_skip = (pagination - 1) * limit;
@@ -46,9 +46,7 @@ export const read_all_notifications = async (
   res: Response
 ) => {
   try {
-    const {
-      token_data: { user_id },
-    } = req;
+    const user_id = req.token_data?.user_id;
 
     // * Set all notifications relating to a specific user to read
     await notification_model.updateMany(
