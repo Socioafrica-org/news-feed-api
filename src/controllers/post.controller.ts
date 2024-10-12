@@ -121,7 +121,7 @@ export const get_post = async (
   res: Response
 ) => {
   try {
-    const { user_id } = req.token_data;
+    const user_id = req.token_data?.user_id;
     const { post_id } = req.params;
     // * Retrieve post from the posts collection via it's ID
     const post_response = await PostModel.findOne({ _id: post_id })
@@ -165,7 +165,7 @@ export const get_posts = async (
   } & TExtendedRequestTokenData,
   res: Response
 ) => {
-  const { user_id } = req.token_data;
+  const user_id = req.token_data?.user_id;
   const { pagination } = req.body;
   const limit = 10;
   const amount_to_skip = (pagination - 1) * limit;

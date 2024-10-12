@@ -368,8 +368,8 @@ export const get_community = async (
   try {
     const {
       params: { community_id },
-      token_data: { user_id },
     } = req;
+    const user_id = req.token_data?.user_id;
 
     // * Retrieve the details concerning a community
     const community = await community_model.findById(community_id);

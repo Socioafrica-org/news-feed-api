@@ -112,7 +112,7 @@ export const get_comment = async (
   res: Response
 ) => {
   try {
-    const { user_id } = req.token_data;
+    const user_id = req.token_data?.user_id;
     const { comment_id } = req.params;
 
     // * Retreive comment from the comment collection
