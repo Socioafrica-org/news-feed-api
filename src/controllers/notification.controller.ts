@@ -25,6 +25,7 @@ export const get_notifications = async (
     // * Retrieve all notifications relating to a specific user
     const notifications = await notification_model
       .find({ user: user_id })
+      .populate("initiated_by")
       .skip(amount_to_skip)
       .limit(limit);
 
