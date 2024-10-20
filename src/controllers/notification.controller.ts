@@ -1,6 +1,13 @@
+import { get_notifications } from "./notification.controller";
 import { Request, Response } from "express";
-import { TExtendedRequestTokenData } from "../utils/types";
+import {
+  TExtendedRequestTokenData,
+  TNotificationModel,
+  TUserModel,
+  TUserModelMetaData,
+} from "../utils/types";
 import notification_model from "../models/Notification.model";
+import { transform_user_details } from "../utils/utils";
 
 /**
  * * Function responsible for retrieving the notifications pertaining to a user
@@ -29,7 +36,25 @@ export const get_notifications = async (
       .skip(amount_to_skip)
       .limit(limit);
 
-    return res.status(200).json(notifications);
+    const parsed_notifications: (Omit<TNotificationModel, "initiated_by"> & {
+      initiated_by: TUserModelMetaData;
+    })[] = [];
+
+    // * loop through the notifications and parse the user information
+    for (const notification of notifications) {
+      // * Transform the user data retrieving only it's metadata
+      const initiated_by = transform_user_details(
+        notification.initiated_by as any as TUserModel
+      ) as TUserModelMetaData;
+
+      // * Add the parsed user's object to the list of notifications to be returned
+      parsed_notifications.push({
+        ...(notification as any)._doc,
+        initiated_by,
+      });
+    }
+
+    return res.status(200).json(parsed_notifications);
   } catch (error) {
     console.error(error);
     return res.status(500).json("Internal server error");
