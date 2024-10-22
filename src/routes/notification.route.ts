@@ -10,12 +10,12 @@ const notification_router = Router();
 
 notification_router.get("/", validate_token as any, get_notifications as any);
 notification_router.put(
-  "/:notification_id/read",
+  "/read",
   validate_token as any,
   read_all_notifications as any
 );
-notification_router.get(
-  "/read/:notification_id",
+notification_router.put(
+  "/:notification_id/read",
   validate_token as any,
   read_notification as any
 );
