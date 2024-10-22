@@ -52,7 +52,7 @@ export const get_notifications = async (
         ...(notification as any)._doc,
         initiated_by,
         url: `https://www.socio.africa/${
-          notification.ref.mode === "follow" ? "profile" : "post"
+          notification.ref.mode === "follow" ? "profile" : "posts"
         }/${
           notification.ref.mode === "comment"
             ? notification.ref.post_id
@@ -60,8 +60,10 @@ export const get_notifications = async (
             ? notification.ref.post_id
             : notification.ref.ref_id
         }/${
-          ["comment", "react"].includes(notification.ref.mode)
-            ? `#${notification.ref.ref_id}`
+          notification.ref.mode === "comment"
+            ? notification.ref.ref_id
+            : notification.ref.mode === "react" && notification.ref.post_id
+            ? notification.ref.ref_id
             : ""
         }`,
       });
