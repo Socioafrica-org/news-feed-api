@@ -54,7 +54,9 @@ export const get_notifications = async (
         url: `https://socio.africa/${
           notification.ref.mode === "follow" ? "profile" : "post"
         }/${
-          ["comment", "react"].includes(notification.ref.mode)
+          notification.ref.mode === "comment"
+            ? notification.ref.post_id
+            : notification.ref.mode === "react" && notification.ref.post_id
             ? notification.ref.post_id
             : notification.ref.ref_id
         }/${
