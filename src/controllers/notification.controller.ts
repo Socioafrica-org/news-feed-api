@@ -51,7 +51,7 @@ export const get_notifications = async (
       parsed_notifications.push({
         ...(notification as any)._doc,
         initiated_by,
-        url: `https://socio.africa/${
+        url: `https://www.socio.africa/${
           notification.ref.mode === "follow" ? "profile" : "post"
         }/${
           notification.ref.mode === "comment"
