@@ -1,4 +1,3 @@
-import { get_notifications } from "./notification.controller";
 import { Request, Response } from "express";
 import {
   TExtendedRequestTokenData,
@@ -38,6 +37,7 @@ export const get_notifications = async (
 
     const parsed_notifications: (Omit<TNotificationModel, "initiated_by"> & {
       initiated_by: TUserModelMetaData;
+      url: string;
     })[] = [];
 
     // * loop through the notifications and parse the user information
@@ -51,6 +51,17 @@ export const get_notifications = async (
       parsed_notifications.push({
         ...(notification as any)._doc,
         initiated_by,
+        url: `https://socio.africa/${
+          notification.ref.mode === "follow" ? "profile" : "post"
+        }/${
+          ["comment", "react"].includes(notification.ref.mode)
+            ? notification.ref.post_id
+            : notification.ref.ref_id
+        }/${
+          ["comment", "react"].includes(notification.ref.mode)
+            ? `#${notification.ref.ref_id}`
+            : ""
+        }`,
       });
     }
 
