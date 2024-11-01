@@ -309,7 +309,7 @@ export const upload_file_to_cloudinary = async (
 };
 
 /**
- * * Function responsible for parsing the list posts retrieved from the post collection for the get posts endpoint response body
+ * * Function responsible for parsing the list posts retrieved from the post collection, getting details like if it was bookmarked by this user, it's reactions, the details of the user who uploaded/shared it
  * @param posts The list of posts from the Post collection
  * @param user_id The user_id of the user with the current access token (the signed in user)
  * @returns A list of posts
@@ -428,17 +428,7 @@ export const parse_single_post = async (
     .catch((e) => []);
 
   // * Parse each comment to include the comment metadata, e.g if it was bookmarked, it's reactions, the details of the user who shared it
-  const parsed_comments: (TCommentResponse & {
-    _id?: Schema.Types.ObjectId;
-  })[] = [];
-
-  // * Loop through the retrieved comments for each post and parse each comment
-  for (const comment of all_comments) {
-    // * The parsed comment containing all the necessary metadata
-    const parsed_comment = await parse_comment(comment, user_id);
-
-    parsed_comments.push(parsed_comment);
-  }
+  const parsed_comments = await parse_comments(all_comments, user_id);
 
   // * IF THE CONFIG.COMMENTS ARG IS TRUE: Loops through the comment response to filter parent comments from child comments/replies, and adds replies to each parent comment
   const comments = config?.comments
@@ -541,6 +531,35 @@ export const parse_single_post = async (
   };
 
   return parsed_post;
+};
+
+/**
+ * * Function responsible for parsing the list comments retrieved from the comments collection
+ * @param comments The list of comments from the Comments collection
+ * @param user_id The user_id of the user with the current access token (the signed in user)
+ * @returns A list of comments
+ */
+export const parse_comments = async (
+  comments: (Document<unknown, {}, TCommentModel> &
+    TCommentModel & {
+      _id: Types.ObjectId;
+    })[],
+  user_id: Schema.Types.ObjectId | string | undefined
+) => {
+  // * Parse each comment to include the comment metadata, e.g if it was bookmarked, it's reactions, the details of the user who shared it
+  const parsed_comments: (TCommentResponse & {
+    _id?: Schema.Types.ObjectId;
+  })[] = [];
+
+  // * Loop through the retrieved comments for each post and parse each comment
+  for (const comment of comments) {
+    // * The parsed comment containing all the necessary metadata
+    const parsed_comment = await parse_comment(comment, user_id);
+
+    parsed_comments.push(parsed_comment);
+  }
+
+  return parsed_comments;
 };
 
 /**

@@ -9,6 +9,7 @@ import CommentModel from "../models/Comment.model";
 import PostModel from "../models/Post.model";
 import {
   parse_comment,
+  parse_comments,
   send_comment_notification,
 } from "../utils/utils";
 
@@ -144,18 +145,13 @@ export const get_comment = async (
     }
 
     // * Parse the comment data retrieved from the collection, adding properties such as like/dislike count
-    const parsed_comment = await parse_comment(comment_response, user_id || '');
+    const parsed_comment = await parse_comment(comment_response, user_id || "");
 
     // * A list containing the parsed replies of the comment
-    const parsed_replies: TCommentResponse[] = [];
-
-    // * Loop trhough the replies list and parse each reply, adding properties such as like/dislike count
-    for (const reply of replies_response) {
-      const parsed_reply = await parse_comment(reply, user_id);
-
-      // * Append the parsed reply to the list of parsed replies
-      parsed_replies.push(parsed_reply);
-    }
+    const parsed_replies = await parse_comments(
+      replies_response,
+      user_id || ""
+    );
 
     // * Add the list of the parsed replies to the parsed comment response body
     parsed_comment.replies = parsed_replies;

@@ -212,6 +212,7 @@ export const get_posts = async (
             .status(500)
             .json("An error occured while retreiving the posts");
         }
+
         // * If there isn't any post relating to no topic in the collection
         if (posts_not_belonging_to_topics.length < 1)
           return res.status(404).json("No posts available");
@@ -219,7 +220,7 @@ export const get_posts = async (
         // * Parse each post in the list, return their reaction count, comment count, bookmarked state, total no. of times shared, etc...
         const posts_not_belonging_to_topics_to_be_returned = await parse_posts(
           posts_not_belonging_to_topics,
-          user_id || ''
+          user_id || ""
         );
 
         // * Return the posts with no topic
@@ -231,7 +232,7 @@ export const get_posts = async (
       // * Parse each post in the list, return their reaction count, comment count, bookmarked state, total no. of times shared, etc...
       const posts_belonging_to_topics_to_be_returned = await parse_posts(
         posts_belonging_to_topics,
-        user_id || ''
+        user_id || ""
       );
 
       // * Return the posts with the specified topics

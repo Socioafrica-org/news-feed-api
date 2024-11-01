@@ -13,6 +13,7 @@ import share_router from "./routes/share.route";
 import user_router from "./routes/user.route";
 import community_router from "./routes/community.route";
 import notification_router from "./routes/notification.route";
+import search_router from "./routes/search.route";
 
 // * Load the environmental variables from the .env file to the process.ENV object
 config();
@@ -73,6 +74,8 @@ app.use("/user", user_router);
 app.use("/community", community_router);
 // * Handles all requests to the /notification endpoint
 app.use("/notification", notification_router);
+// * Handles all requests to the /search endpoint
+app.use("/search", search_router);
 
 app.use("*", (req: Request, res: Response, next: NextFunction) => {
   const time = new Date(Date.now()).toString();
