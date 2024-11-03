@@ -15,6 +15,7 @@ import {
   TCommentNotificationJobData,
   TReactionNotificationJobData,
   TFollowNotificationJobData,
+  TCommunityResponse,
 } from "./types";
 import CommentModel from "../models/Comment.model";
 import bookmark_model from "../models/Bookmark.model";
@@ -560,6 +561,65 @@ export const parse_comments = async (
   }
 
   return parsed_comments;
+};
+
+/**
+ * * Function responsible for parsing the list users retrieved from the Users collection
+ * @param users The list of users from the Users collection
+ * @param user_id The user_id of the user with the current access token (the signed in user)
+ * @returns A list of users
+ */
+export const parse_users = async (
+  users: (Document<unknown, {}, TUserModel> &
+    TUserModel & {
+      _id: Types.ObjectId;
+    })[]
+) => {
+  // * Parse each user to include the user metadata, e.g firstname, username, etc
+  const parsed_users: TUserModelMetaData[] = [];
+
+  // * Loop through the retrieved users and parse each user
+  for (const user of users) {
+    // * The parsed user containing all the necessary metadata
+    const parsed_user = transform_user_details(user);
+
+    if (!parsed_user) return;
+
+    parsed_users.push(parsed_user);
+  }
+
+  return parsed_users;
+};
+
+/**
+ * * Function responsible for parsing the list communities retrieved from the Communities collection
+ * @param communities The list of communities from the Communities collection
+ * @returns A list of communities
+ */
+export const parse_communities = async (
+  communities: (Document<unknown, {}, TCommunityModel> &
+    TCommunityModel & {
+      _id: Types.ObjectId;
+    })[]
+) => {
+  // * Parse each community to include the community metadata, e.g firstname, username, etc
+  const parsed_communities: TCommunityResponse[] = [];
+
+  // * Loop through each community in the list of retrieved communities, and add the no. of members in each community
+  for (const community of communities) {
+    // * Retrieve the no. of members in this community
+    const members_count = await community_member_model.countDocuments({
+      community: community._id,
+    });
+    const parsed_community: TCommunityResponse = {
+      ...(community as any)._doc,
+      members_count,
+    };
+    // * Add the parsed community to the list of parsed communities
+    parsed_communities.push(parsed_community);
+  }
+
+  return parsed_communities;
 };
 
 /**

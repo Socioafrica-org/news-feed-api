@@ -7,7 +7,11 @@ import {
 } from "../utils/types";
 import community_member_model from "../models/CommunityMember.model";
 import PostModel from "../models/Post.model";
-import { parse_posts, upload_file_to_cloudinary } from "../utils/utils";
+import {
+  parse_communities,
+  parse_posts,
+  upload_file_to_cloudinary,
+} from "../utils/utils";
 import { Types } from "mongoose";
 
 /**
@@ -238,21 +242,7 @@ export const get_communities = async (
       .skip(amount_to_skip)
       .limit(limit);
 
-    const parsed_communities: TCommunityResponse[] = [];
-
-    // * Loop through each community in the list of retrieved communities, and add the no. of members in each community
-    for (const community of communities) {
-      // * Retrieve the no. of members in this community
-      const members_count = await community_member_model.countDocuments({
-        community: community._id,
-      });
-      const parsed_community: TCommunityResponse = {
-        ...(community as any)._doc,
-        members_count,
-      };
-      // * Add the parsed community to the list of parsed communities
-      parsed_communities.push(parsed_community);
-    }
+    const parsed_communities = await parse_communities(communities);
 
     return res.status(200).json(parsed_communities);
   } catch (error) {
