@@ -32,6 +32,7 @@ export const get_notifications = async (
     const notifications = await notification_model
       .find({ user: user_id })
       .populate("initiated_by")
+      .sort({ createdAt: -1 })
       .skip(amount_to_skip)
       .limit(limit);
 

@@ -26,7 +26,7 @@ export const search_posts = async (
     query: { content, pagination },
   } = req;
   try {
-    const limit = 10;
+    const limit = 30;
     const amount_to_skip = (pagination - 1) * limit;
 
     // * Retrieve posts containing the given content using regex
@@ -61,7 +61,7 @@ export const search_users = async (
     query: { content, pagination },
   } = req;
   try {
-    const limit = 10;
+    const limit = 30;
     const amount_to_skip = (pagination - 1) * limit;
 
     // * Retrieve users whose usernames, or fullnames contain the given content using regex
@@ -105,7 +105,7 @@ export const search_communities = async (
     query: { content, pagination },
   } = req;
   try {
-    const limit = 10;
+    const limit = 30;
     const amount_to_skip = (pagination - 1) * limit;
 
     // * Retrieve communities which description or names contain the specified content
@@ -148,7 +148,7 @@ export const search_comments = async (
     query: { content, pagination },
   } = req;
   try {
-    const limit = 10;
+    const limit = 30;
     const amount_to_skip = (pagination - 1) * limit;
 
     // * Retrieve comments containing the given content using regex
