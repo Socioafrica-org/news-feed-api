@@ -171,7 +171,7 @@ export type TNotificationModel = {
   read: boolean;
   ref: {
     mode: "post" | "comment" | "react" | "follow";
-    ref_id: Types.ObjectId;
+    ref_id: Types.ObjectId | string;
     post_id?: Types.ObjectId;
   };
 };
@@ -188,15 +188,15 @@ export type TCommentNotificationJobData = {
   parent_comment_id?: Types.ObjectId | string;
   reply_to?: Types.ObjectId | string;
   comment: { _id: Types.ObjectId | string; content: string };
-}
+};
 
 export type TReactionNotificationJobData = {
   initiated_by: Types.ObjectId | string;
   post_id?: Types.ObjectId | string;
   comment_id?: Types.ObjectId | string;
-}
+};
 
 export type TFollowNotificationJobData = {
   initiated_by: Types.ObjectId | string;
   user: Types.ObjectId | string;
-}
+};

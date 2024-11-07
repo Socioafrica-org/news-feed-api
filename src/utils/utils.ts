@@ -266,7 +266,7 @@ export const send_follow_notification = async (
       user: data.user?.toString(),
       initiated_by: current_user._id.toString(),
       content: `${current_user.metadata.first_name} started following you`,
-      ref: { mode: "follow", ref_id: current_user._id },
+      ref: { mode: "follow", ref_id: current_user.username },
     });
   } catch (error) {
     console.error(

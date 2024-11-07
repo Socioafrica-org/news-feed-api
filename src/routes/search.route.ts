@@ -4,7 +4,7 @@ import {
   search_communities,
   search_posts,
   search_users,
-} from "../controllers/search.comtroller";
+} from "../controllers/search.controller";
 import { decode_token } from "../middlewares/token.middleware";
 
 const search_router = Router();
