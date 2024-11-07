@@ -18,7 +18,7 @@ const notification_schema: Schema<TNotificationModel> =
             type: String,
             enum: ["post", "comment", "react", "follow"],
           },
-          ref_id: Schema.Types.ObjectId,
+          ref_id: String,
           post_id: Schema.Types.ObjectId,
         },
       },
