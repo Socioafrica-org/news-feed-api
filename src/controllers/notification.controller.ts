@@ -58,11 +58,11 @@ export const get_notifications = async (
             : notification.ref.mode === "react" && notification.ref.post_id
             ? notification.ref.post_id
             : notification.ref.ref_id
-        }/${
+        }${
           notification.ref.mode === "comment"
-            ? notification.ref.ref_id
+            ? `#${notification.ref.ref_id}`
             : notification.ref.mode === "react" && notification.ref.post_id
-            ? notification.ref.ref_id
+            ? `#${notification.ref.ref_id}`
             : ""
         }`,
       });
