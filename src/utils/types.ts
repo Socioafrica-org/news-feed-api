@@ -1,3 +1,4 @@
+import { Request } from "express";
 import { Schema, Types } from "mongoose";
 
 export type TTopicModel = {
@@ -199,4 +200,14 @@ export type TReactionNotificationJobData = {
 export type TFollowNotificationJobData = {
   initiated_by: Types.ObjectId | string;
   user: Types.ObjectId | string;
+};
+
+export enum METRIC_LABEL_ENUM {
+  METHOD = "method",
+  PATH = "path",
+  STATUS_CODE = "status_code",
+}
+
+export type TMetricsRequest = Request & {
+  req_url: URL;
 };

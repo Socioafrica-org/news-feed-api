@@ -27,6 +27,17 @@ import notification_model from "../models/Notification.model";
 import community_model from "../models/Community.model";
 
 /**
+ * * The class for the metrics label object
+ */
+export class MetricLabelClass {
+  constructor(
+    public method: string,
+    public path: string,
+    public status_code: number
+  ) {}
+}
+
+/**
  * * Function responsible for processesing each task added to the post notification queue
  * @param job contains the Job data object
  * @returns void
