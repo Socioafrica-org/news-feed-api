@@ -4,16 +4,22 @@ import { config } from "dotenv";
 import bodyParser from "body-parser";
 import connect_mongodb from "./utils/db.config";
 import cookieParser from "cookie-parser";
-import topic_router from "./routes/topic.route";
-import post_router from "./routes/post.route";
-import comment_router from "./routes/comment.route";
-import reaction_router from "./routes/reaction.route";
-import bookmark_router from "./routes/bookmark.route";
-import share_router from "./routes/share.route";
-import user_router from "./routes/user.route";
-import community_router from "./routes/community.route";
-import notification_router from "./routes/notification.route";
-import search_router from "./routes/search.route";
+import topic_router from "./routes/topic.routes";
+import post_router from "./routes/post.routes";
+import comment_router from "./routes/comment.routes";
+import reaction_router from "./routes/reaction.routes";
+import bookmark_router from "./routes/bookmark.routes";
+import share_router from "./routes/share.routes";
+import user_router from "./routes/user.routes";
+import community_router from "./routes/community.routes";
+import notification_router from "./routes/notification.routes";
+import search_router from "./routes/search.routes";
+import monitoring_router from "./routes/monitoring.routes";
+import {
+  manage_404_middleware,
+  manage_error_middleware,
+  manage_metric_middlewares,
+} from "./controllers/monitoring.controller";
 
 // * Load the environmental variables from the .env file to the process.ENV object
 config();
@@ -33,6 +39,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   console.log(req.method, req.hostname, req.path, time);
   next();
 });
+
+// * Keep track of the application metrics
+app.use(manage_metric_middlewares as any);
 
 // * Configure CORS
 app.use(cors());
@@ -76,17 +85,20 @@ app.use("/community", community_router);
 app.use("/notification", notification_router);
 // * Handles all requests to the /search endpoint
 app.use("/search", search_router);
+// * Handles all requests to the /metrics endpoint
+app.use("/metrics", monitoring_router);
 
-app.use("*", (req: Request, res: Response, next: NextFunction) => {
-  const time = new Date(Date.now()).toString();
-  console.error("NOT FOUND", req.method, req.hostname, req.path, time);
-  return res.status(404).send("Not found");
-});
+app.use(
+  "*",
+  manage_404_middleware as any,
+  (req: Request, res: Response, next: NextFunction) => {
+    const time = new Date(Date.now()).toString();
+    console.error("NOT FOUND", req.method, req.hostname, req.path, time);
+    return res.status(404).send("Not found");
+  }
+);
 
-app.use((err: any, req: Request, res: Response) => {
-  console.error(err);
-  return res.status(500).json("Internal server error");
-});
+app.use(manage_error_middleware as any);
 
 app.listen(PORT, () => {
   console.log(`Application listening on port ${PORT}`);
