@@ -56,7 +56,7 @@ export const validate_token = async (
     // * Proceed to the next step
     next();
   } catch (error) {
-    console.log(error);
+    console.log("THIS ERRR", error);
     return res.status(500).json("Invernal server error");
   }
 };
@@ -84,7 +84,7 @@ export const decode_token = async (
     // * Proceed to the next step
     next();
   } catch (error) {
-    console.log(error);
+    console.log("THAT ERRR", error);
     return res.status(500).json("Invernal server error");
   }
 };
