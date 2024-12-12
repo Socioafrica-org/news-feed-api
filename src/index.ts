@@ -14,12 +14,8 @@ import user_router from "./routes/user.routes";
 import community_router from "./routes/community.routes";
 import notification_router from "./routes/notification.routes";
 import search_router from "./routes/search.routes";
-import monitoring_router from "./routes/monitoring.routes";
-import {
-  manage_404_middleware,
-  manage_error_middleware,
-  manage_metric_middlewares,
-} from "./controllers/monitoring.controller";
+import { manage_error_middleware } from "./middlewares/error.middleware";
+import manage_metric_middleware from "express-prometheus-middleware";
 
 // * Load the environmental variables from the .env file to the process.ENV object
 config();
@@ -41,7 +37,20 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // * Keep track of the application metrics
-app.use(manage_metric_middlewares as any);
+app.use(
+  manage_metric_middleware({
+    metricsPath: "/metrics",
+    collectDefaultMetrics: true,
+    customLabels: ["app"],
+    transformLabels(labels, req) {
+      // eslint-disable-next-line no-param-reassign
+      labels.app = "socio_features";
+    },
+    requestDurationBuckets: [0.1, 0.5, 1, 1.5, 2, 3, 5, 10],
+    requestLengthBuckets: [512, 1024, 5120, 10240, 51200, 102400],
+    responseLengthBuckets: [512, 1024, 5120, 10240, 51200, 102400],
+  })
+);
 
 // * Configure CORS
 app.use(cors());
@@ -85,18 +94,12 @@ app.use("/community", community_router);
 app.use("/notification", notification_router);
 // * Handles all requests to the /search endpoint
 app.use("/search", search_router);
-// * Handles all requests to the /metrics endpoint
-app.use("/metrics", monitoring_router);
 
-app.use(
-  "*",
-  manage_404_middleware as any,
-  (req: Request, res: Response, next: NextFunction) => {
-    const time = new Date(Date.now()).toString();
-    console.error("NOT FOUND", req.method, req.hostname, req.path, time);
-    return res.status(404).send("Not found");
-  }
-);
+app.use("*", (req: Request, res: Response, next: NextFunction) => {
+  const time = new Date(Date.now()).toString();
+  console.error("NOT FOUND", req.method, req.hostname, req.path, time);
+  return res.status(404).send("Not found");
+});
 
 app.use(manage_error_middleware as any);
 
